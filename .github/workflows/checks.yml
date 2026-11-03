@@ -1,0 +1,23 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r backend/requirements-dev.txt
+      - name: Validate question tree
+        run: python scripts/validate_tree.py
+      - name: Template matches handler.py
+        run: python backend/sync_template.py --check
+      - name: Lint CloudFormation template
+        run: cfn-lint backend/template.yaml
+      - name: Backend tests
+        run: pytest backend/tests -q

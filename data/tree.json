@@ -1,0 +1,341 @@
+{
+  "version": 1,
+  "meta": {
+    "title": "Which AWS certification fits you?",
+    "subtitle": "Answer a few quick questions and get a recommended first certification and a next step.",
+    "updated": "2026-11-03",
+    "disclaimer": "Exam versions, prices and dates change. Always check the official AWS page before booking.",
+    "price_note": "Prices are AWS list prices in USD before tax; local prices may differ.",
+    "resources": [
+      { "label": "All AWS certifications", "url": "https://aws.amazon.com/certification/" },
+      { "label": "Free exam prep on AWS Skill Builder", "url": "https://skillbuilder.aws/" }
+    ]
+  },
+  "start": "q_experience",
+  "nodes": {
+    "q_experience": {
+      "type": "question",
+      "text": "How much hands-on experience do you have with AWS or other cloud platforms?",
+      "options": [
+        { "label": "None yet, I'm new to the cloud", "next": "q_background" },
+        { "label": "A bit: tutorials, uni or side projects", "next": "q_focus" },
+        { "label": "A lot: I use it regularly at work or in serious projects (about 1+ year)", "next": "q_has_associate" }
+      ]
+    },
+
+    "q_background": {
+      "type": "question",
+      "text": "What best describes your background?",
+      "options": [
+        { "label": "Tech: computer science, engineering, data or similar", "next": "q_tech_goal" },
+        { "label": "Business, management or another non-technical field", "next": "q_business_interest" }
+      ]
+    },
+
+    "q_business_interest": {
+      "type": "question",
+      "text": "What would you most like to understand better?",
+      "options": [
+        { "label": "How the cloud works and what AWS offers", "next": "r_clf_business" },
+        { "label": "What AI can do and how it works", "next": "r_aif_business" },
+        { "label": "How organizations should invest in, govern and scale AI", "next": "r_aib" }
+      ]
+    },
+
+    "q_tech_goal": {
+      "type": "question",
+      "text": "What do you want from your first AWS certification?",
+      "options": [
+        { "label": "A solid overview of the cloud before going deeper", "next": "r_clf_tech" },
+        { "label": "A foundation in AI and generative AI", "next": "r_aif_tech" },
+        { "label": "I'm ready to study harder and go for a job-relevant cert", "next": "q_focus" }
+      ]
+    },
+
+    "q_focus": {
+      "type": "question",
+      "text": "Which kind of work sounds most exciting to you?",
+      "options": [
+        { "label": "Designing systems: how all the pieces fit together", "next": "r_saa" },
+        { "label": "Writing code and building applications", "next": "r_dva" },
+        { "label": "Keeping systems running: monitoring, automation, troubleshooting", "next": "r_cloudops" },
+        { "label": "Working with data and data pipelines", "next": "r_dea" },
+        { "label": "AI and machine learning", "next": "q_ai" },
+        { "label": "Security", "next": "r_security_start" }
+      ]
+    },
+
+    "q_ai": {
+      "type": "question",
+      "text": "What kind of AI work interests you most?",
+      "options": [
+        { "label": "Training, deploying and monitoring ML models", "next": "r_mla" },
+        { "label": "Building apps on top of LLMs: chatbots, RAG, agents", "next": "r_genai_start" },
+        { "label": "Not sure yet, I want the big picture first", "next": "r_aif_explore" }
+      ]
+    },
+
+    "q_has_associate": {
+      "type": "question",
+      "text": "Do you already hold an Associate-level AWS certification?",
+      "options": [
+        { "label": "Yes", "next": "q_focus_pro" },
+        { "label": "Not yet", "next": "q_focus" }
+      ]
+    },
+
+    "q_focus_pro": {
+      "type": "question",
+      "text": "Where do you want to go deeper?",
+      "options": [
+        { "label": "Architecture at scale: multi-account, migrations, hybrid", "next": "r_sap" },
+        { "label": "DevOps: CI/CD, infrastructure as code, automation", "next": "r_dop" },
+        { "label": "Generative AI in production: Bedrock, RAG, agents", "next": "r_aip" },
+        { "label": "Machine learning and data", "next": "r_ml_next" },
+        { "label": "Security", "next": "r_scs" },
+        { "label": "Networking: hybrid connectivity, complex VPC designs", "next": "r_networking" }
+      ]
+    },
+
+    "r_clf_business": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "aif",
+      "reason": "You'll learn the language of the cloud: what the main AWS services do, how pricing works and how security responsibilities are shared. No coding needed, which makes it ideal if you work alongside tech teams."
+    },
+    "r_aif_business": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "aib",
+      "reason": "It explains AI, machine learning and generative AI in plain terms, with real use cases. Once you know how the technology works, AI Business Strategist adds the strategy and governance side."
+    },
+    "r_aib": {
+      "type": "result",
+      "primary": "aib",
+      "next_step": "aif",
+      "reason": "This one is built for people who decide about AI rather than build it: choosing investments, building the business case and scaling adoption responsibly. AI Practitioner is a good companion if you also want the technical basics."
+    },
+    "r_clf_tech": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "saa",
+      "reason": "A quick, low-pressure way to get the big picture of AWS. With a tech background you can move on to Solutions Architect – Associate soon after."
+    },
+    "r_aif_tech": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "mla",
+      "reason": "It gives you the AI, ML and generative AI vocabulary and the AWS services behind it. Machine Learning Engineer – Associate is the natural hands-on next step."
+    },
+    "r_saa": {
+      "type": "result",
+      "primary": "saa",
+      "next_step": "sap",
+      "reason": "The most popular technical AWS certification. You'll learn to combine compute, storage, networking and databases into systems that are secure, resilient and cost-efficient."
+    },
+    "r_dva": {
+      "type": "result",
+      "primary": "dva",
+      "next_step": "dop",
+      "reason": "Made for people who write code that runs on AWS: serverless functions, APIs, databases and deployment pipelines. DevOps Engineer – Professional is where this path leads."
+    },
+    "r_cloudops": {
+      "type": "result",
+      "primary": "cloudops",
+      "next_step": "dop",
+      "reason": "Focused on running workloads well: monitoring, troubleshooting, automation and reliability. It used to be called SysOps Administrator, and it leads naturally to DevOps Engineer – Professional."
+    },
+    "r_dea": {
+      "type": "result",
+      "primary": "dea",
+      "next_step": "mla",
+      "reason": "You'll learn to build data pipelines and data stores on AWS. Good data foundations are what AI and ML run on, so ML Engineer – Associate is a strong next step."
+    },
+    "r_security_start": {
+      "type": "result",
+      "primary": "saa",
+      "next_step": "scs",
+      "reason": "Security – Specialty expects real experience, so start with Solutions Architect – Associate. It builds the base that cloud security sits on: identity and access, networking and encryption."
+    },
+    "r_mla": {
+      "type": "result",
+      "primary": "mla",
+      "next_step": "aip",
+      "reason": "It covers the full ML workflow on AWS: preparing data, training, deploying and maintaining models. Generative AI Developer – Professional is the advanced step if you move toward LLM products."
+    },
+    "r_genai_start": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "aip",
+      "reason": "Generative AI Developer – Professional is the cert for building LLM apps, but it is a professional-level exam. AI Practitioner is a quick first win that covers generative AI concepts and the AWS services behind them. If you already build on AWS every day, you can aim for the professional exam directly."
+    },
+    "r_aif_explore": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "mla",
+      "reason": "The best way to get the big picture of AI, ML and generative AI before choosing a direction. Afterwards, ML Engineer – Associate takes you hands-on."
+    },
+    "r_sap": {
+      "type": "result",
+      "primary": "sap",
+      "next_step": "dop",
+      "reason": "Built for designing complex AWS solutions across many accounts, including migrations and hybrid setups. It's one of the most respected AWS certifications."
+    },
+    "r_dop": {
+      "type": "result",
+      "primary": "dop",
+      "next_step": "scs",
+      "reason": "Validates CI/CD, infrastructure as code, monitoring and automation for distributed systems at scale. Security – Specialty pairs well with it."
+    },
+    "r_aip": {
+      "type": "result",
+      "primary": "aip",
+      "reason": "The newest professional certification, built for engineers shipping generative AI products on AWS with services like Amazon Bedrock."
+    },
+    "r_ml_next": {
+      "type": "result",
+      "primary": "mla",
+      "next_step": "aip",
+      "reason": "The Machine Learning – Specialty exam was retired in March 2026, so ML Engineer – Associate is now AWS's main ML certification. Generative AI Developer – Professional is the advanced step after it."
+    },
+    "r_scs": {
+      "type": "result",
+      "primary": "scs",
+      "reason": "The dedicated AWS security certification: identity and access, data protection, detection and incident response."
+    },
+    "r_networking": {
+      "type": "result",
+      "primary": "sap",
+      "next_step": "scs",
+      "reason": "The Advanced Networking – Specialty exam is being retired at the end of 2026. Solutions Architect – Professional is the strongest current option and covers network connectivity design for large and hybrid setups."
+    }
+  },
+
+  "certs": {
+    "clf": {
+      "name": "AWS Certified Cloud Practitioner",
+      "short_name": "Cloud Practitioner",
+      "level": "Foundational",
+      "summary": "Shows you understand the AWS Cloud as a whole: core services, pricing and billing, security basics and global infrastructure. Not tied to any job role.",
+      "good_for": "Complete beginners, technical or not.",
+      "price_usd": 100,
+      "status": "active",
+      "url": "https://aws.amazon.com/certification/certified-cloud-practitioner/"
+    },
+    "aif": {
+      "name": "AWS Certified AI Practitioner",
+      "short_name": "AI Practitioner",
+      "level": "Foundational",
+      "summary": "Covers the foundations of AI, machine learning and generative AI, their use cases, and the AWS services that support them.",
+      "good_for": "Anyone who wants to understand AI on AWS before going deeper.",
+      "price_usd": 100,
+      "status": "active",
+      "url": "https://aws.amazon.com/certification/certified-ai-practitioner/"
+    },
+    "aib": {
+      "name": "AWS Certified AI Business Strategist",
+      "short_name": "AI Business Strategist",
+      "level": "Business",
+      "summary": "Tests business judgment for AI: which AI investments to pursue, how to build the business case, governance and responsible AI, and scaling adoption. No coding, and it does not test AWS services.",
+      "good_for": "Business, management and product-minded people.",
+      "price_usd": null,
+      "status": "beta",
+      "note": "Currently offered as a beta exam.",
+      "url": "https://aws.amazon.com/certification/certified-ai-business-strategist/"
+    },
+    "saa": {
+      "name": "AWS Certified Solutions Architect – Associate",
+      "short_name": "Solutions Architect – Associate",
+      "level": "Associate",
+      "summary": "Designing secure, resilient, high-performing and cost-efficient systems on AWS, based on the AWS Well-Architected Framework.",
+      "good_for": "The classic first technical cert; AWS recommends it for people moving into cloud careers.",
+      "price_usd": 150,
+      "status": "active",
+      "url": "https://aws.amazon.com/certification/certified-solutions-architect-associate/"
+    },
+    "dva": {
+      "name": "AWS Certified Developer – Associate",
+      "short_name": "Developer – Associate",
+      "level": "Associate",
+      "summary": "Developing, deploying and debugging cloud-based applications on AWS.",
+      "good_for": "Developers who write code that runs on AWS.",
+      "price_usd": 150,
+      "status": "active",
+      "note": "A new exam version that adds AI-assisted development tools starts on 1 Dec 2026; the current version can be taken until 30 Nov 2026.",
+      "url": "https://aws.amazon.com/certification/certified-developer-associate/"
+    },
+    "cloudops": {
+      "name": "AWS Certified CloudOps Engineer – Associate",
+      "short_name": "CloudOps Engineer – Associate",
+      "level": "Associate",
+      "summary": "Deploying, managing and operating workloads on AWS: monitoring, troubleshooting, automation, security controls and networking. Formerly called SysOps Administrator – Associate.",
+      "good_for": "People who like keeping systems healthy and running.",
+      "price_usd": 150,
+      "status": "active",
+      "url": "https://aws.amazon.com/certification/certified-cloudops-engineer-associate/"
+    },
+    "dea": {
+      "name": "AWS Certified Data Engineer – Associate",
+      "short_name": "Data Engineer – Associate",
+      "level": "Associate",
+      "summary": "Building data pipelines and data stores on AWS and optimizing their cost and performance.",
+      "good_for": "Data-minded students heading toward data or AI engineering.",
+      "price_usd": 150,
+      "status": "active",
+      "url": "https://aws.amazon.com/certification/certified-data-engineer-associate/"
+    },
+    "mla": {
+      "name": "AWS Certified Machine Learning Engineer – Associate",
+      "short_name": "ML Engineer – Associate",
+      "level": "Associate",
+      "summary": "Implementing, deploying and maintaining AI and ML solutions on AWS.",
+      "good_for": "People who want to build and run ML models, not just use them.",
+      "price_usd": 150,
+      "status": "active",
+      "note": "The exam was updated to a new version in 2026; use the latest exam guide when studying.",
+      "url": "https://aws.amazon.com/certification/certified-machine-learning-engineer-associate/"
+    },
+    "sap": {
+      "name": "AWS Certified Solutions Architect – Professional",
+      "short_name": "Solutions Architect – Professional",
+      "level": "Professional",
+      "summary": "Designing complex, optimized AWS solutions based on the Well-Architected Framework. Intended for people with 2+ years of hands-on experience.",
+      "good_for": "Experienced architects working across many accounts and services.",
+      "price_usd": 300,
+      "status": "active",
+      "note": "The exam is being updated: the current version can be taken until 16 Nov 2026, then the new version replaces it.",
+      "url": "https://aws.amazon.com/certification/certified-solutions-architect-professional/"
+    },
+    "dop": {
+      "name": "AWS Certified DevOps Engineer – Professional",
+      "short_name": "DevOps Engineer – Professional",
+      "level": "Professional",
+      "summary": "Provisioning, operating and managing distributed application systems on AWS, including CI/CD, automation and infrastructure as code. Intended for people with 2+ years of experience.",
+      "good_for": "Developers and operations engineers who automate everything.",
+      "price_usd": 300,
+      "status": "active",
+      "url": "https://aws.amazon.com/certification/certified-devops-engineer-professional/"
+    },
+    "aip": {
+      "name": "AWS Certified Generative AI Developer – Professional",
+      "short_name": "Generative AI Developer – Professional",
+      "level": "Professional",
+      "summary": "Designing, building and deploying production generative AI solutions on AWS, using services like Amazon Bedrock.",
+      "good_for": "Engineers shipping LLM-based products.",
+      "price_usd": 300,
+      "status": "active",
+      "note": "AWS suggests AI Practitioner, Solutions Architect – Associate, ML Engineer – Associate and/or Data Engineer – Associate as helpful preparation.",
+      "url": "https://aws.amazon.com/certification/certified-generative-ai-developer-professional/"
+    },
+    "scs": {
+      "name": "AWS Certified Security – Specialty",
+      "short_name": "Security – Specialty",
+      "level": "Specialty",
+      "summary": "Securing AWS workloads and applications: identity and access, data protection, detection and incident response.",
+      "good_for": "Anyone heading into cloud security.",
+      "price_usd": 300,
+      "status": "active",
+      "url": "https://aws.amazon.com/certification/certified-security-specialty/"
+    }
+  }
+}

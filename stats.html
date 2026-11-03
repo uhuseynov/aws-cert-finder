@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cert Finder Live Stats</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: presenter view for a projector; one big total, then a ranked bar list that refreshes every few seconds. */
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --ink: #16202c; --muted: #566476; --line: #d6dde6;
+  --track: #e3e8ee; --bar: #c96a00; --band: #16202c; --band-ink: #f3f6f9; --band-muted: #a9b6c5;
+  --accent: #ff9900; --accent-ink: #16202c; --hover: #fff4e3; --warn: #9a5b00;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d141c; --surface: #16212d; --ink: #e8edf3; --muted: #9caabb; --line: #2a3a4b;
+    --track: #223142; --bar: #d87400; --band: #0a1017; --band-ink: #f3f6f9; --band-muted: #93a3b5;
+    --hover: #1f2d3c; --warn: #f0b357; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d141c; --surface: #16212d; --ink: #e8edf3; --muted: #9caabb; --line: #2a3a4b;
+  --track: #223142; --bar: #d87400; --band: #0a1017; --band-ink: #f3f6f9; --band-muted: #93a3b5;
+  --hover: #1f2d3c; --warn: #f0b357; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 1rem/1.5 var(--body); min-height: 100vh; }
+.wrap {
+  width: 100%; max-width: 64rem; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.band { background: var(--band); color: var(--band-ink); }
+.band .wrap { padding-block: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.band b { font: 600 1.05rem/1.2 var(--display); }
+.live { font: 500 .75rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--band-muted); display: flex; align-items: center; gap: .5rem; }
+.dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--accent); }
+.live.stale .dot { background: var(--band-muted); }
+main .wrap { padding-block: 2.5rem 3rem; display: grid; gap: 2.25rem; }
+.eyebrow { font: 500 .78rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hero { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem 3rem; }
+.total { font: 800 clamp(4rem, 14vw, 8rem)/.9 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.hero p { font-size: 1.15rem; color: var(--muted); max-width: 28rem; }
+.hero p b { color: var(--ink); font-weight: 600; }
+.bars { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.row {
+  display: grid; grid-template-columns: minmax(9rem, 17rem) minmax(0, 1fr) 6.5rem;
+  align-items: center; gap: 1rem; padding: .35rem .5rem; border-radius: 8px;
+}
+.row:hover { background: var(--hover); }
+.name { font-weight: 600; font-size: 1.05rem; min-width: 0; }
+.level { display: block; font: 500 .7rem/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.track { height: 1.25rem; background: var(--track); border-radius: 0 4px 4px 0; overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--bar); border-radius: 0 4px 4px 0; transition: width .6s ease; }
+.val { text-align: right; font: 500 1.05rem/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+.val small { display: block; color: var(--muted); font-size: .75rem; }
+.msg { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1.25rem 1.4rem; display: grid; gap: .5rem; max-width: 40rem; }
+.msg code { font-family: var(--mono); font-size: .9em; }
+.err { color: var(--warn); font-size: .95rem; }
+@media (max-width: 640px) {
+  .row { grid-template-columns: minmax(0, 1fr) 4.5rem; }
+  .track { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <b>Cert Finder · live results</b>
+    <span class="live" id="live"><span class="dot" aria-hidden="true"></span><span id="live-text">Connecting…</span></span>
+  </div>
+</header>
+<main>
+  <div class="wrap" id="app">
+    <p class="eyebrow">Loading…</p>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  "use strict";
+  var config = window.CERT_FINDER_CONFIG || {};
+  var REFRESH_MS = 5000;
+  var app = document.getElementById("app");
+  var liveEl = document.getElementById("live");
+  var liveText = document.getElementById("live-text");
+  var certs = {};
+  var rows = {};
+  var built = false;
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function apiBase() {
+    var url = (config.statsApiUrl || "").trim();
+    if (!url) return "";
+    return url.charAt(url.length - 1) === "/" ? url : url + "/";
+  }
+
+  function notConfigured() {
+    var box = el("div", "msg");
+    box.appendChild(el("h2", null, "Stats are switched off"));
+    var p = el("p");
+    p.innerHTML = "<code>statsApiUrl</code> in <code>config.js</code> is empty. Set it to <code>\"/api/\"</code> on the CloudFront site, or to the stack's <code>StatsApiUrl</code> output elsewhere (see <code>docs/DEPLOY.md</code>).";
+    box.appendChild(p);
+    app.replaceChildren(box);
+    liveText.textContent = "Not configured";
+    liveEl.classList.add("stale");
+  }
+
+  function build() {
+    app.replaceChildren();
+    var hero = el("section", "hero");
+    var left = el("div");
+    left.appendChild(el("p", "eyebrow", "People who got a recommendation"));
+    var total = el("div", "total", "0");
+    total.id = "total";
+    left.appendChild(total);
+    hero.appendChild(left);
+    var lead = el("p");
+    lead.id = "lead";
+    hero.appendChild(lead);
+    app.appendChild(hero);
+
+    var section = el("section");
+    section.appendChild(el("p", "eyebrow", "Recommended first certification"));
+    var list = el("ul", "bars");
+    list.id = "bars";
+    list.style.marginTop = ".9rem";
+    section.appendChild(list);
+    var err = el("p", "err");
+    err.id = "err";
+    err.hidden = true;
+    section.appendChild(err);
+    app.appendChild(section);
+    built = true;
+  }
+
+  function row(id) {
+    if (rows[id]) return rows[id];
+    var cert = certs[id] || { short_name: id, level: "" };
+    var li = el("li", "row");
+    var name = el("div", "name", cert.short_name);
+    name.appendChild(el("span", "level", cert.level));
+    var track = el("div", "track");
+    var fill = el("div", "fill");
+    track.appendChild(fill);
+    var val = el("div", "val");
+    li.append(name, track, val);
+    rows[id] = { li: li, fill: fill, val: val, name: cert.short_name };
+    return rows[id];
+  }
+
+  function render(data) {
+    if (!built) build();
+    var total = data.total || 0;
+    var max = data.counts.reduce(function (m, c) { return Math.max(m, c.count); }, 0);
+    document.getElementById("total").textContent = total.toLocaleString("en");
+    var top = data.counts[0];
+    var lead = document.getElementById("lead");
+    if (total && top && top.count) {
+      lead.innerHTML = "";
+      lead.append("Most common pick so far: ");
+      var b = document.createElement("b");
+      b.textContent = (certs[top.cert] || {}).short_name || top.cert;
+      lead.append(b, " (" + Math.round(top.count / total * 100) + "%).");
+    } else {
+      lead.textContent = "Waiting for the first result. Scan the QR code and take the quiz!";
+    }
+    var list = document.getElementById("bars");
+    data.counts.forEach(function (c) {
+      var r = row(c.cert);
+      var pct = total ? Math.round(c.count / total * 100) : 0;
+      r.fill.style.width = (max ? c.count / max * 100 : 0) + "%";
+      r.val.innerHTML = "";
+      r.val.append(String(c.count));
+      r.val.appendChild(el("small", null, pct + "%"));
+      r.li.title = r.name + ": " + c.count + " of " + total + " (" + pct + "%)";
+      list.appendChild(r.li); // re-appending keeps the list in ranked order
+    });
+    document.getElementById("err").hidden = true;
+    liveEl.classList.remove("stale");
+    liveText.textContent = "Live · updated " + new Date().toLocaleTimeString("en-GB");
+  }
+
+  function showError(e) {
+    if (!built) build();
+    var err = document.getElementById("err");
+    err.hidden = false;
+    err.textContent = "Couldn't reach the stats API (" + e.message + "). Showing the last numbers; retrying.";
+    liveEl.classList.add("stale");
+    liveText.textContent = "Reconnecting…";
+  }
+
+  function poll() {
+    fetch(apiBase() + "stats", { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(render)
+      .catch(showError)
+      .finally(function () { setTimeout(poll, REFRESH_MS); });
+  }
+
+  if (!apiBase()) { notConfigured(); return; }
+  fetch(config.treeUrl || "data/tree.json", { cache: "no-cache" })
+    .then(function (r) { return r.ok ? r.json() : { certs: {} }; })
+    .catch(function () { return { certs: {} }; })
+    .then(function (tree) { certs = tree.certs || {}; poll(); });
+})();
+</script>
+</body>
+</html>

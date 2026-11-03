@@ -1,0 +1,313 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Cert Finder - static site on S3 behind CloudFront, plus a live stats API
+  (Lambda Function URL + DynamoDB) served on the same domain under /api/.
+
+Parameters:
+  CertIds:
+    Type: String
+    Default: "clf,aif,aib,saa,dva,cloudops,dea,mla,sap,dop,aip,scs"
+    Description: Comma-separated cert ids from data/tree.json. Any other id is rejected.
+  AllowedOrigin:
+    Type: String
+    Default: "*"
+    Description: >-
+      Only matters if the site is hosted somewhere else (GitHub Pages, Vercel)
+      and calls the Function URL directly, e.g. https://aws-cert-finder.vercel.app
+      (no trailing slash). The CloudFront site uses /api/ on its own domain.
+
+Resources:
+  # ---------- Website: private S3 bucket, served only through CloudFront ----------
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  SiteOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-site"
+        Description: Lets CloudFront read the site bucket
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # Short cache so uploads show up within about a minute, no invalidation needed.
+  SiteCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub "${AWS::StackName}-short-cache"
+        Comment: Static files cached 60 s by default, 5 min at most
+        DefaultTTL: 60
+        MaxTTL: 300
+        MinTTL: 0
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  SiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Cert Finder
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: site
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt SiteOriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - Id: api
+            # FunctionUrl is https://<id>.lambda-url.<region>.on.aws/ -> keep the host part
+            DomainName: !Select [2, !Split ["/", !GetAtt StatsFunctionUrl.FunctionUrl]]
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols:
+                - TLSv1.2
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+          CachePolicyId: !Ref SiteCachePolicy
+          Compress: true
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachedMethods: [GET, HEAD]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad          # Managed-CachingDisabled
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # Managed-AllViewerExceptHostHeader (for Function URLs)
+            Compress: false
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${SiteBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${SiteDistribution}"
+
+  # ---------- Stats API: DynamoDB counter + Lambda with a public Function URL ----------
+  StatsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: cert
+          AttributeType: S
+      KeySchema:
+        - AttributeName: cert
+          KeyType: HASH
+
+  StatsFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: stats-table-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                  - dynamodb:Scan
+                Resource: !GetAtt StatsTable.Arn
+
+  StatsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Cert Finder stats API
+      Runtime: python3.13
+      Handler: index.handler
+      Role: !GetAtt StatsFunctionRole.Arn
+      MemorySize: 128
+      Timeout: 5
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref StatsTable
+          CERT_IDS: !Ref CertIds
+      Code:
+        ZipFile: |
+          # --- BEGIN handler.py (copied by sync_template.py - edit handler.py, not this) ---
+          """Cert Finder stats API (AWS Lambda + Function URL + DynamoDB).
+
+          POST /result  {"cert": "saa"}  -> counts one finished quiz for that cert
+          GET  /stats                    -> {"total": n, "counts": [{"cert": id, "count": n}, ...]}
+          Paths may carry an /api prefix (CloudFront routes /api/* here).
+          CORS is handled by the Function URL config, not here.
+          """
+          import base64
+          import json
+          import logging
+          import os
+
+          import boto3
+          from botocore.exceptions import BotoCoreError, ClientError
+
+          log = logging.getLogger()
+          log.setLevel(logging.INFO)
+
+          TABLE = boto3.resource("dynamodb").Table(os.environ["TABLE_NAME"])
+          ALLOWED = [c.strip() for c in os.environ.get("CERT_IDS", "").split(",") if c.strip()]
+          MAX_BODY = 1024
+
+
+          def reply(status, body):
+              return {
+                  "statusCode": status,
+                  "headers": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+                  "body": json.dumps(body),
+              }
+
+
+          def handler(event, context):
+              method = event.get("requestContext", {}).get("http", {}).get("method", "")
+              path = (event.get("rawPath") or "/").rstrip("/") or "/"
+              if path == "/api" or path.startswith("/api/"):
+                  path = path[4:] or "/"
+              try:
+                  if method == "POST" and path == "/result":
+                      return record_result(event)
+                  if method == "GET" and path == "/stats":
+                      return get_stats()
+                  if method == "GET" and path == "/":
+                      return reply(200, {"service": "cert-finder-stats", "endpoints": ["POST /result", "GET /stats"]})
+                  return reply(404, {"error": "not found"})
+              except (ClientError, BotoCoreError):
+                  log.exception("DynamoDB call failed")
+                  return reply(500, {"error": "storage error"})
+
+
+          def record_result(event):
+              raw = event.get("body") or ""
+              if event.get("isBase64Encoded"):
+                  try:
+                      raw = base64.b64decode(raw).decode("utf-8")
+                  except (ValueError, UnicodeDecodeError):
+                      return reply(400, {"error": "bad body"})
+              if len(raw) > MAX_BODY:
+                  return reply(413, {"error": "body too large"})
+              try:
+                  data = json.loads(raw)
+              except ValueError:
+                  return reply(400, {"error": "body must be JSON like {\"cert\": \"saa\"}"})
+              cert = data.get("cert") if isinstance(data, dict) else None
+              if cert not in ALLOWED:
+                  return reply(400, {"error": "unknown cert id"})
+              TABLE.update_item(
+                  Key={"cert": cert},
+                  UpdateExpression="ADD #n :one",
+                  ExpressionAttributeNames={"#n": "count"},
+                  ExpressionAttributeValues={":one": 1},
+              )
+              return reply(200, {"ok": True})
+
+
+          def get_stats():
+              counts = {c: 0 for c in ALLOWED}
+              kwargs = {}
+              while True:
+                  page = TABLE.scan(**kwargs)
+                  for item in page.get("Items", []):
+                      if item.get("cert") in counts:
+                          counts[item["cert"]] = int(item.get("count", 0))
+                  if "LastEvaluatedKey" not in page:
+                      break
+                  kwargs["ExclusiveStartKey"] = page["LastEvaluatedKey"]
+              ordered = sorted(counts.items(), key=lambda kv: (-kv[1], ALLOWED.index(kv[0])))
+              return reply(200, {"total": sum(counts.values()), "counts": [{"cert": c, "count": n} for c, n in ordered]})
+          # --- END handler.py ---
+
+  StatsFunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${StatsFunction}"
+      RetentionInDays: 7
+
+  StatsFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt StatsFunction.Arn
+      AuthType: NONE
+      Cors:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowMethods:
+          - GET
+          - POST
+        AllowHeaders:
+          - content-type
+        MaxAge: 86400
+
+  # Public function URLs need BOTH permissions (lambda:InvokeFunctionUrl and
+  # lambda:InvokeFunction restricted to function-URL calls).
+  PublicUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref StatsFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  PublicInvokeViaUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref StatsFunction
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
+Outputs:
+  SiteUrl:
+    Description: The website (share this / put it in the QR code)
+    Value: !Sub "https://${SiteDistribution.DomainName}/"
+  SiteBucketName:
+    Description: Upload index.html, stats.html, config.js and the data folder here
+    Value: !Ref SiteBucket
+  DistributionId:
+    Description: CloudFront distribution id (for cache invalidations)
+    Value: !Ref SiteDistribution
+  StatsApiUrl:
+    Description: Direct API URL, only needed if the site is hosted outside CloudFront
+    Value: !GetAtt StatsFunctionUrl.FunctionUrl
+  StatsTableName:
+    Description: DynamoDB table holding the counts (clear it before the event)
+    Value: !Ref StatsTable

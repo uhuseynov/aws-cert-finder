@@ -1,0 +1,6 @@
+# Only the website goes to Vercel: index.html, stats.html, config.js, data/
+backend/
+scripts/
+docs/
+.github/
+README.md
