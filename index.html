@@ -292,8 +292,25 @@ footer .wrap { padding-block: 1.25rem 1.5rem; font-size: .82rem; color: var(--mu
 
   /* ---------- views ---------- */
 
+  // Shortest and longest number of questions from `id` to a result (the tree may share nodes).
+  function questionRange(id, memo) {
+    memo = memo || {};
+    if (memo[id]) return memo[id];
+    var node = tree.nodes[id];
+    if (node.type !== "question") return (memo[id] = [0, 0]);
+    var lo = Infinity, hi = 0;
+    node.options.forEach(function (o) {
+      var r = questionRange(o.next, memo);
+      lo = Math.min(lo, r[0] + 1);
+      hi = Math.max(hi, r[1] + 1);
+    });
+    return (memo[id] = [lo, hi]);
+  }
+
   function renderStart() {
     var certCount = Object.keys(tree.certs).length;
+    var range = questionRange(tree.start);
+    var rangeText = range[0] === range[1] ? String(range[0]) : range[0] + "–" + range[1];
     var ladder = el("div", { class: "ladder", "aria-label": "AWS certification levels" },
       LADDER.map(function (r) {
         return el("div", { class: "rung lvl-" + r.level }, [el("strong", { text: r.level }), r.text]);
@@ -303,9 +320,9 @@ footer .wrap { padding-block: 1.25rem 1.5rem; font-size: .82rem; color: var(--mu
       el("h1", { text: tree.meta.title }),
       el("p", { class: "lede", text: tree.meta.subtitle }),
       el("div", { class: "facts" }, [
-        el("span", {}, [el("b", { text: "3–5" }), " questions"]),
+        el("span", {}, [el("b", { text: rangeText }), " questions"]),
         el("span", {}, [el("b", { text: String(certCount) }), " certifications covered"]),
-        el("span", {}, [el("b", { text: "~1" }), " minute"])
+        el("span", {}, [el("b", { text: "1–2" }), " minutes"])
       ]),
       el("div", {}, [el("button", { class: "btn", type: "button", id: "start-btn", onclick: function () { go(tree.start); } }, ["Start", el("span", { "aria-hidden": "true", text: "→" })])]),
       ladder

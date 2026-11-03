@@ -1,6 +1,6 @@
 # AWS Cert Finder
 
-A short quiz for the AWS Student Builder Group event at Constructor University: visitors answer 3–5 questions and get a recommended AWS certification plus a next step. Optional live stats let the presenter show which certifications the room got.
+A short quiz for the AWS Student Builder Group event at Constructor University: visitors answer 4–6 questions about their field of study and goals, and get a recommended AWS certification plus a next step. Optional live stats let the presenter show which certifications the room got.
 
 - **Questions & results:** `data/tree.json` (one file, no code)
 - **Site:** static, hosted on Vercel (see Deploying)
@@ -106,6 +106,23 @@ fetch(STATS_URL + "result", {
 | `GET /stats` | `200 {"total": 12, "counts": [{"cert": "saa", "count": 5}, ...]}` sorted by count, every cert included (zeros too) |
 
 `STATS_URL` comes from `config.js` (`statsApiUrl`) and ends with `/`. When it's empty, skip the call. `index.html` shows the full pattern if you want to copy it.
+
+## How the questions are organized
+
+The first question is the field of study. Each field has its own track, and every question after it changes the result:
+
+| Field (first answer) | Track | Typical results |
+|---|---|---|
+| Computer science, software, data science, engineering | `q_tech_*`, `q_focus`, `q_data`, `q_ai`, `q_focus_pro` | All 12 certs, from Foundational to Professional |
+| Physics, mathematics | `q_quant_*` | Cloud/AI Practitioner, or Solutions Architect, Data Engineer, ML Engineer |
+| Biology, chemistry, biochemistry, earth & environment | `q_life_*` | Same as physics, with field-specific use cases |
+| Business, economics, management | `q_biz_*` | Cloud Practitioner, AI Practitioner, AI Business Strategist; Data Engineer for data people |
+| Psychology, social sciences, politics, media, humanities | `q_soc_*` | AI Practitioner, AI Business Strategist, Cloud Practitioner; Data/ML Engineer for data people |
+| Something else / not a student | `q_experience` and the general questions | Any |
+
+Anyone who answers that they already use the cloud regularly jumps to the technical track (`q_tech_cert_alot`), whatever their field.
+
+Some nodes are shared between tracks (for example `q_time_data`, `q_sci_career` and the `r_research_*` results), so the "tree" is really a graph without loops. Changing a shared node changes it for every track that uses it.
 
 ## Editing questions
 

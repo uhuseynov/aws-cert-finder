@@ -1,57 +1,78 @@
 {
-  "version": 1,
+  "version": 2,
   "meta": {
     "title": "Which AWS certification fits you?",
-    "subtitle": "Answer a few quick questions and get a recommended first certification and a next step.",
+    "subtitle": "Answer a few questions about your studies and goals, and get a recommended first certification and a next step.",
     "updated": "2026-11-03",
     "disclaimer": "Exam versions, prices and dates change. Always check the official AWS page before booking.",
     "price_note": "Prices are AWS list prices in USD before tax; local prices may differ.",
     "resources": [
-      { "label": "All AWS certifications", "url": "https://aws.amazon.com/certification/" },
-      { "label": "Free exam prep on AWS Skill Builder", "url": "https://skillbuilder.aws/" }
+      {
+        "label": "All AWS certifications",
+        "url": "https://aws.amazon.com/certification/"
+      },
+      {
+        "label": "Free exam prep on AWS Skill Builder",
+        "url": "https://skillbuilder.aws/"
+      }
     ]
   },
-  "start": "q_experience",
+  "start": "q_field",
   "nodes": {
-    "q_experience": {
+    "q_field": {
+      "type": "question",
+      "text": "What's your field of study?",
+      "options": [
+        { "label": "Computer science, software, data science or engineering", "next": "q_tech_experience" },
+        { "label": "Physics, mathematics or another quantitative science", "next": "q_quant_exp" },
+        { "label": "Biology, chemistry, biochemistry or earth & environmental sciences", "next": "q_life_exp" },
+        { "label": "Business, economics or management", "next": "q_biz_exp" },
+        { "label": "Psychology, social sciences, politics, media or humanities", "next": "q_soc_exp" },
+        { "label": "Something else, or I'm not a student", "next": "q_experience" }
+      ]
+    },
+    "q_tech_experience": {
       "type": "question",
       "text": "How much hands-on experience do you have with AWS or other cloud platforms?",
       "options": [
-        { "label": "None yet, I'm new to the cloud", "next": "q_background" },
-        { "label": "A bit: tutorials, uni or side projects", "next": "q_focus" },
-        { "label": "A lot: I use it regularly at work or in serious projects (about 1+ year)", "next": "q_has_associate" }
+        { "label": "None yet", "next": "q_tech_time" },
+        { "label": "A bit: tutorials, uni or side projects", "next": "q_tech_cert_some" },
+        { "label": "A lot: I use it regularly at work or in serious projects (about 1+ year)", "next": "q_tech_cert_alot" }
       ]
     },
-
-    "q_background": {
+    "q_tech_cert_some": {
       "type": "question",
-      "text": "What best describes your background?",
+      "text": "Do you already hold an AWS certification?",
       "options": [
-        { "label": "Tech: computer science, engineering, data or similar", "next": "q_tech_goal" },
-        { "label": "Business, management or another non-technical field", "next": "q_business_interest" }
+        { "label": "No, not yet", "next": "q_tech_time" },
+        { "label": "Yes, a Foundational one (Cloud Practitioner or AI Practitioner)", "next": "q_focus" },
+        { "label": "Yes, an Associate one or higher", "next": "q_focus_pro" }
       ]
     },
-
-    "q_business_interest": {
+    "q_tech_cert_alot": {
       "type": "question",
-      "text": "What would you most like to understand better?",
+      "text": "Do you already hold an AWS certification?",
       "options": [
-        { "label": "How the cloud works and what AWS offers", "next": "r_clf_business" },
-        { "label": "What AI can do and how it works", "next": "r_aif_business" },
-        { "label": "How organizations should invest in, govern and scale AI", "next": "r_aib" }
+        { "label": "No, or only a Foundational one", "next": "q_focus" },
+        { "label": "Yes, an Associate one or higher", "next": "q_focus_pro" }
       ]
     },
-
-    "q_tech_goal": {
+    "q_tech_time": {
       "type": "question",
-      "text": "What do you want from your first AWS certification?",
+      "text": "How much time can you put into preparing for the exam?",
       "options": [
-        { "label": "A solid overview of the cloud before going deeper", "next": "r_clf_tech" },
-        { "label": "A foundation in AI and generative AI", "next": "r_aif_tech" },
-        { "label": "I'm ready to study harder and go for a job-relevant cert", "next": "q_focus" }
+        { "label": "A few weeks: I want a quick first certificate", "next": "q_tech_first" },
+        { "label": "A couple of months: I'm ready for a job-relevant one", "next": "q_focus" }
       ]
     },
-
+    "q_tech_first": {
+      "type": "question",
+      "text": "What would you rather learn first?",
+      "options": [
+        { "label": "How the cloud works and what AWS offers", "next": "r_clf_tech" },
+        { "label": "AI, machine learning and generative AI", "next": "r_aif_tech" }
+      ]
+    },
     "q_focus": {
       "type": "question",
       "text": "Which kind of work sounds most exciting to you?",
@@ -59,12 +80,19 @@
         { "label": "Designing systems: how all the pieces fit together", "next": "r_saa" },
         { "label": "Writing code and building applications", "next": "r_dva" },
         { "label": "Keeping systems running: monitoring, automation, troubleshooting", "next": "r_cloudops" },
-        { "label": "Working with data and data pipelines", "next": "r_dea" },
+        { "label": "Working with data", "next": "q_data" },
         { "label": "AI and machine learning", "next": "q_ai" },
         { "label": "Security", "next": "r_security_start" }
       ]
     },
-
+    "q_data": {
+      "type": "question",
+      "text": "What do you enjoy most about working with data?",
+      "options": [
+        { "label": "Building pipelines and databases that move and store data", "next": "r_dea" },
+        { "label": "Analyzing data and training models", "next": "r_mla" }
+      ]
+    },
     "q_ai": {
       "type": "question",
       "text": "What kind of AI work interests you most?",
@@ -74,16 +102,6 @@
         { "label": "Not sure yet, I want the big picture first", "next": "r_aif_explore" }
       ]
     },
-
-    "q_has_associate": {
-      "type": "question",
-      "text": "Do you already hold an Associate-level AWS certification?",
-      "options": [
-        { "label": "Yes", "next": "q_focus_pro" },
-        { "label": "Not yet", "next": "q_focus" }
-      ]
-    },
-
     "q_focus_pro": {
       "type": "question",
       "text": "Where do you want to go deeper?",
@@ -96,7 +114,266 @@
         { "label": "Networking: hybrid connectivity, complex VPC designs", "next": "r_networking" }
       ]
     },
-
+    "q_quant_exp": {
+      "type": "question",
+      "text": "Have you used AWS or another cloud platform before?",
+      "options": [
+        { "label": "No, or only a little", "next": "q_quant_code" },
+        { "label": "Yes, regularly (about a year or more)", "next": "q_tech_cert_alot" }
+      ]
+    },
+    "q_quant_code": {
+      "type": "question",
+      "text": "How much do you code?",
+      "options": [
+        { "label": "Rarely or never", "next": "q_sci_nocode" },
+        { "label": "Regularly: Python, MATLAB, Julia, C++ or similar", "next": "q_quant_use" }
+      ]
+    },
+    "q_quant_use": {
+      "type": "question",
+      "text": "What would you most like to use the cloud for?",
+      "options": [
+        { "label": "Running simulations or computations too big for my laptop", "next": "q_time_compute" },
+        { "label": "Storing and analyzing large experimental or observational datasets", "next": "q_time_data" },
+        { "label": "Machine learning on research data", "next": "q_time_ml" },
+        { "label": "Getting into a data, AI or tech job after my degree", "next": "q_sci_career" },
+        { "label": "Just understanding what the cloud is", "next": "r_sci_clf" }
+      ]
+    },
+    "q_life_exp": {
+      "type": "question",
+      "text": "Have you used AWS or another cloud platform before?",
+      "options": [
+        { "label": "No, or only a little", "next": "q_life_code" },
+        { "label": "Yes, regularly (about a year or more)", "next": "q_tech_cert_alot" }
+      ]
+    },
+    "q_life_code": {
+      "type": "question",
+      "text": "Do you code or use data analysis tools?",
+      "options": [
+        { "label": "Rarely or never", "next": "q_sci_nocode" },
+        { "label": "Yes: Python, R or similar", "next": "q_life_use" }
+      ]
+    },
+    "q_life_use": {
+      "type": "question",
+      "text": "What would you most like to use the cloud for?",
+      "options": [
+        { "label": "Processing large datasets: sequencing, imaging, climate or lab data", "next": "q_time_data" },
+        { "label": "Heavy computations such as molecular or climate simulations", "next": "q_time_compute" },
+        { "label": "Machine learning or AI in research", "next": "q_time_ml" },
+        { "label": "Getting into bioinformatics, data or AI jobs", "next": "q_sci_career" },
+        { "label": "Just understanding what the cloud is", "next": "r_sci_clf" }
+      ]
+    },
+    "q_time_compute": {
+      "type": "question",
+      "text": "How much time can you put into preparing for the exam?",
+      "options": [
+        { "label": "A few weeks: I want a quick first certificate", "next": "r_research_compute_clf" },
+        { "label": "A couple of months: I'm ready for a deeper, hands-on one", "next": "r_research_compute_saa" }
+      ]
+    },
+    "q_time_data": {
+      "type": "question",
+      "text": "How much time can you put into preparing for the exam?",
+      "options": [
+        { "label": "A few weeks: I want a quick first certificate", "next": "r_research_data_clf" },
+        { "label": "A couple of months: I'm ready for a deeper, hands-on one", "next": "r_research_data_dea" }
+      ]
+    },
+    "q_time_ml": {
+      "type": "question",
+      "text": "How much time can you put into preparing for the exam?",
+      "options": [
+        { "label": "A few weeks: I want a quick first certificate", "next": "r_research_ml_aif" },
+        { "label": "A couple of months: I'm ready for a deeper, hands-on one", "next": "r_research_ml_mla" }
+      ]
+    },
+    "q_sci_career": {
+      "type": "question",
+      "text": "Which direction interests you most after your degree?",
+      "options": [
+        { "label": "Data engineering and analytics", "next": "r_sci_career_dea" },
+        { "label": "Machine learning and AI", "next": "r_sci_career_mla" },
+        { "label": "Software or cloud engineering", "next": "r_sci_career_saa" },
+        { "label": "Management, consulting or policy, working with tech teams", "next": "r_sci_career_mgmt" }
+      ]
+    },
+    "q_sci_nocode": {
+      "type": "question",
+      "text": "What would you like to get out of a certification?",
+      "options": [
+        { "label": "Understand the cloud for my studies or future job", "next": "r_sci_clf" },
+        { "label": "Understand AI and how it's changing science", "next": "r_sci_aif" },
+        { "label": "A first step toward working with data and code", "next": "r_sci_build" }
+      ]
+    },
+    "q_biz_exp": {
+      "type": "question",
+      "text": "Have you used AWS or another cloud platform before?",
+      "options": [
+        { "label": "No, or only a little", "next": "q_biz_code" },
+        { "label": "Yes, regularly (about a year or more)", "next": "q_tech_cert_alot" }
+      ]
+    },
+    "q_biz_code": {
+      "type": "question",
+      "text": "How do you usually work with data?",
+      "options": [
+        { "label": "Mostly Excel and presentations", "next": "q_biz_role" },
+        { "label": "I also use SQL, Python or BI tools like Power BI or Tableau", "next": "q_biz_data" }
+      ]
+    },
+    "q_biz_role": {
+      "type": "question",
+      "text": "Which future role sounds most like you?",
+      "options": [
+        { "label": "Management or strategy", "next": "q_biz_lead" },
+        { "label": "Consulting", "next": "q_biz_consult" },
+        { "label": "Product or project management in tech", "next": "q_biz_product" },
+        { "label": "Sales, marketing or business development", "next": "q_biz_sales" },
+        { "label": "Founding my own startup", "next": "q_biz_founder" }
+      ]
+    },
+    "q_biz_lead": {
+      "type": "question",
+      "text": "What do you most want to get better at?",
+      "options": [
+        { "label": "Deciding which AI projects are worth it and managing their risks", "next": "r_biz_aib" },
+        { "label": "Understanding the technology my teams and suppliers use", "next": "r_biz_lead_clf" }
+      ]
+    },
+    "q_biz_consult": {
+      "type": "question",
+      "text": "What will your clients care about most?",
+      "options": [
+        { "label": "Moving to the cloud and controlling IT costs", "next": "r_biz_consult_clf" },
+        { "label": "Using AI and generative AI in their business", "next": "r_biz_consult_aif" },
+        { "label": "AI strategy, governance and responsible AI", "next": "r_biz_aib" }
+      ]
+    },
+    "q_biz_product": {
+      "type": "question",
+      "text": "What kind of product would you like to work on?",
+      "options": [
+        { "label": "Cloud software and online services", "next": "r_biz_product_clf" },
+        { "label": "AI-powered products", "next": "r_biz_product_aif" }
+      ]
+    },
+    "q_biz_sales": {
+      "type": "question",
+      "text": "What would you like to sell or market?",
+      "options": [
+        { "label": "Cloud and IT services", "next": "r_biz_sales_clf" },
+        { "label": "AI solutions", "next": "r_biz_sales_aif" }
+      ]
+    },
+    "q_biz_founder": {
+      "type": "question",
+      "text": "What will your startup need most from you?",
+      "options": [
+        { "label": "Running the product on AWS without wasting money", "next": "r_biz_founder_clf" },
+        { "label": "Building AI into the product", "next": "r_biz_founder_aif" }
+      ]
+    },
+    "q_biz_data": {
+      "type": "question",
+      "text": "What would you like to do with data?",
+      "options": [
+        { "label": "Analytics and reporting for business decisions", "next": "q_biz_time_data" },
+        { "label": "Using AI to improve business processes", "next": "r_biz_ai_aif" },
+        { "label": "Switching into a data or tech role", "next": "r_biz_switch" }
+      ]
+    },
+    "q_biz_time_data": {
+      "type": "question",
+      "text": "How much time can you put into preparing for the exam?",
+      "options": [
+        { "label": "A few weeks: I want a quick first certificate", "next": "r_biz_data_clf" },
+        { "label": "A couple of months: I'm ready for a deeper, hands-on one", "next": "r_biz_data_dea" }
+      ]
+    },
+    "q_soc_exp": {
+      "type": "question",
+      "text": "Have you used AWS or another cloud platform before?",
+      "options": [
+        { "label": "No, or only a little", "next": "q_soc_code" },
+        { "label": "Yes, regularly (about a year or more)", "next": "q_tech_cert_alot" }
+      ]
+    },
+    "q_soc_code": {
+      "type": "question",
+      "text": "Do you work with data or code?",
+      "options": [
+        { "label": "Rarely or never", "next": "q_soc_interest" },
+        { "label": "Yes: statistics in R, SPSS, Python or similar", "next": "q_soc_data" }
+      ]
+    },
+    "q_soc_interest": {
+      "type": "question",
+      "text": "Which topic interests you most?",
+      "options": [
+        { "label": "How AI works and how it affects people", "next": "q_soc_ai" },
+        { "label": "How the internet and cloud services work behind the scenes", "next": "r_soc_clf" },
+        { "label": "Ethics, policy and governance of technology", "next": "r_soc_aib" }
+      ]
+    },
+    "q_soc_ai": {
+      "type": "question",
+      "text": "What would you like to do with that knowledge?",
+      "options": [
+        { "label": "Use AI tools well in my studies and future job", "next": "r_soc_aif" },
+        { "label": "Research or write about AI's impact on society", "next": "r_soc_aif_research" },
+        { "label": "Help organizations adopt AI responsibly", "next": "r_soc_aib" }
+      ]
+    },
+    "q_soc_data": {
+      "type": "question",
+      "text": "What would you like to do with your data skills?",
+      "options": [
+        { "label": "Analyze survey, text or social media data at a larger scale", "next": "q_time_data" },
+        { "label": "Use machine learning or AI in my research", "next": "q_time_ml" },
+        { "label": "Move into a data-focused job", "next": "r_soc_career" }
+      ]
+    },
+    "q_experience": {
+      "type": "question",
+      "text": "How much hands-on experience do you have with AWS or other cloud platforms?",
+      "options": [
+        { "label": "None yet, I'm new to the cloud", "next": "q_background" },
+        { "label": "A bit: tutorials, uni or side projects", "next": "q_tech_cert_some" },
+        { "label": "A lot: I use it regularly at work or in serious projects (about 1+ year)", "next": "q_tech_cert_alot" }
+      ]
+    },
+    "q_background": {
+      "type": "question",
+      "text": "What best describes your background?",
+      "options": [
+        { "label": "Tech: computer science, engineering, data or similar", "next": "q_tech_goal" },
+        { "label": "Business, management or another non-technical field", "next": "q_business_interest" }
+      ]
+    },
+    "q_business_interest": {
+      "type": "question",
+      "text": "What would you most like to understand better?",
+      "options": [
+        { "label": "How the cloud works and what AWS offers", "next": "r_clf_business" },
+        { "label": "What AI can do and how it works", "next": "r_aif_business" },
+        { "label": "How organizations should invest in, govern and scale AI", "next": "r_aib" }
+      ]
+    },
+    "q_tech_goal": {
+      "type": "question",
+      "text": "What do you want from your first AWS certification?",
+      "options": [
+        { "label": "A solid overview of the cloud before going deeper", "next": "r_clf_tech" },
+        { "label": "A foundation in AI and generative AI", "next": "r_aif_tech" },
+        { "label": "I'm ready to study harder and go for a job-relevant cert", "next": "q_focus" }
+      ]
+    },
     "r_clf_business": {
       "type": "result",
       "primary": "clf",
@@ -208,9 +485,200 @@
       "primary": "sap",
       "next_step": "scs",
       "reason": "The Advanced Networking – Specialty exam is being retired at the end of 2026. Solutions Architect – Professional is the strongest current option and covers network connectivity design for large and hybrid setups."
+    },
+    "r_research_compute_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "saa",
+      "reason": "With a few weeks, Cloud Practitioner is a realistic first step. You'll learn how renting computing power works, what it costs and how to keep data safe. Solutions Architect – Associate then teaches you to design the setups that big simulations need."
+    },
+    "r_research_compute_saa": {
+      "type": "result",
+      "primary": "saa",
+      "next_step": "mla",
+      "reason": "Solutions Architect – Associate teaches you to choose and combine compute, storage and networking on AWS, which is what large simulations and calculations need. If your results feed into machine learning, ML Engineer – Associate is a good next step."
+    },
+    "r_research_data_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "dea",
+      "reason": "With a few weeks, Cloud Practitioner is a realistic first step: you'll understand how cloud storage and computing work and what they cost. Data Engineer – Associate is the hands-on certificate for building pipelines around large research datasets."
+    },
+    "r_research_data_dea": {
+      "type": "result",
+      "primary": "dea",
+      "next_step": "mla",
+      "reason": "Data Engineer – Associate teaches you to build pipelines and data stores for datasets far too big for a laptop. Once your data is in good shape, ML Engineer – Associate shows you how to train models on it."
+    },
+    "r_research_ml_aif": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "mla",
+      "reason": "With a few weeks, AI Practitioner gives you a solid grounding in machine learning, generative AI and the AWS services behind them. ML Engineer – Associate is the hands-on step for training and deploying your own models."
+    },
+    "r_research_ml_mla": {
+      "type": "result",
+      "primary": "mla",
+      "next_step": "aip",
+      "reason": "ML Engineer – Associate covers the workflow your research would use: preparing data, training, deploying and monitoring models on AWS. Generative AI Developer – Professional is the advanced step if you move toward LLM-based tools."
+    },
+    "r_sci_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "aif",
+      "reason": "Cloud Practitioner gives you the big picture: what the cloud is, how universities and companies use it, what it costs and how security works. No coding needed. AI Practitioner is a natural follow-up."
+    },
+    "r_sci_aif": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "clf",
+      "reason": "AI Practitioner explains AI, machine learning and generative AI in plain terms, with real use cases. It needs no coding, so it fits well if you want to follow how AI is changing research. Cloud Practitioner adds the cloud basics."
+    },
+    "r_sci_build": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "dea",
+      "reason": "Cloud Practitioner is a gentle start that needs no coding. While you learn Python or SQL, aim for Data Engineer – Associate next: it's about building pipelines for large datasets, a skill research groups and companies both need."
+    },
+    "r_sci_career_dea": {
+      "type": "result",
+      "primary": "dea",
+      "next_step": "mla",
+      "reason": "Data Engineer – Associate shows you can build the pipelines and data stores that analytics and AI depend on, and your science background is a real advantage there. ML Engineer – Associate is the next step."
+    },
+    "r_sci_career_mla": {
+      "type": "result",
+      "primary": "mla",
+      "next_step": "aip",
+      "reason": "ML Engineer – Associate shows you can take machine learning from experiments to production on AWS. Combined with your scientific field, that makes a strong profile. Generative AI Developer – Professional is the advanced step."
+    },
+    "r_sci_career_saa": {
+      "type": "result",
+      "primary": "saa",
+      "next_step": "dva",
+      "reason": "Solutions Architect – Associate is the most popular technical AWS certification and a common first credential for cloud jobs. Developer – Associate adds the coding side."
+    },
+    "r_sci_career_mgmt": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "aib",
+      "reason": "Cloud Practitioner helps you talk confidently with engineers and understand cloud costs and risks. AI Business Strategist then adds AI strategy and governance, which is useful in management, consulting and policy roles."
+    },
+    "r_biz_aib": {
+      "type": "result",
+      "primary": "aib",
+      "next_step": "aif",
+      "reason": "Your role is to decide about AI, or advise others on it, rather than build it. This certification tests exactly that judgment: which projects are worth it, the business case and governance. No coding needed. AI Practitioner adds the technical basics."
+    },
+    "r_biz_lead_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "aib",
+      "reason": "Cloud Practitioner helps you understand what your tech teams and suppliers are talking about, how cloud pricing works and where the risks are. AI Business Strategist adds AI strategy on top."
+    },
+    "r_biz_consult_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "aib",
+      "reason": "Cloud Practitioner covers the business side of the cloud: pricing models, cost control, security and the main services. That's what clients ask about when they move to the cloud. AI Business Strategist prepares you for AI projects."
+    },
+    "r_biz_consult_aif": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "aib",
+      "reason": "AI Practitioner teaches what AI and generative AI can and can't do, so you can recommend realistic use cases to clients. AI Business Strategist then covers business cases and governance."
+    },
+    "r_biz_product_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "aif",
+      "reason": "Product and project managers in tech work with engineers every day. Cloud Practitioner gives you the shared language: services, costs, security and reliability. AI Practitioner is a strong addition."
+    },
+    "r_biz_product_aif": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "aib",
+      "reason": "To manage an AI product, you need to know what models can do, what they cost and where they fail. AI Practitioner covers that without coding. AI Business Strategist adds strategy and governance."
+    },
+    "r_biz_sales_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "aif",
+      "reason": "Cloud Practitioner helps you explain cloud services, pricing and security to customers with confidence. AI Practitioner is a natural next step as more products include AI."
+    },
+    "r_biz_sales_aif": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "aib",
+      "reason": "AI Practitioner helps you understand the AI solutions you sell and answer customers' questions accurately. AI Business Strategist adds the business case and governance side."
+    },
+    "r_biz_founder_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "saa",
+      "reason": "Cloud Practitioner teaches the AWS basics a founder needs: the main services, pricing and how to avoid surprise bills. If you end up building the product yourself, Solutions Architect – Associate is the next step."
+    },
+    "r_biz_founder_aif": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "aib",
+      "reason": "AI Practitioner shows you what AI and generative AI can realistically do for a product and which AWS services exist for it. AI Business Strategist helps you build the business case."
+    },
+    "r_biz_ai_aif": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "aib",
+      "reason": "With your data skills, AI Practitioner helps you spot where AI and generative AI can improve business processes, and which AWS services exist for it. AI Business Strategist adds the business case and governance."
+    },
+    "r_biz_switch": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "dea",
+      "reason": "Cloud Practitioner is a quick first credential that shows you understand the cloud. Your SQL and Python are a good base for Data Engineer – Associate, the AWS certification closest to data roles."
+    },
+    "r_biz_data_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "dea",
+      "reason": "With a few weeks, Cloud Practitioner is a realistic first step: you'll learn where company data lives in the cloud and what it costs. Data Engineer – Associate is the hands-on step for building analytics pipelines."
+    },
+    "r_biz_data_dea": {
+      "type": "result",
+      "primary": "dea",
+      "next_step": "mla",
+      "reason": "Data Engineer – Associate teaches you to build the pipelines and data stores that dashboards and reports depend on. ML Engineer – Associate is the step after if you want to move into predictive analytics."
+    },
+    "r_soc_clf": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "aif",
+      "reason": "Cloud Practitioner explains what happens behind the apps and websites you use every day: where data is stored, how services scale and how security works. No coding needed. AI Practitioner is a good next step."
+    },
+    "r_soc_aib": {
+      "type": "result",
+      "primary": "aib",
+      "next_step": "aif",
+      "reason": "AI Business Strategist focuses on decisions, governance and responsible AI, not on coding or AWS services. It suits people who want to shape how organizations use AI. AI Practitioner adds the technical basics."
+    },
+    "r_soc_aif": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "aib",
+      "reason": "AI Practitioner explains how AI, machine learning and generative AI work, what they're good at and where they fail. That helps you use AI tools well and judge their output. AI Business Strategist is a good follow-up."
+    },
+    "r_soc_aif_research": {
+      "type": "result",
+      "primary": "aif",
+      "next_step": "aib",
+      "reason": "To study AI's impact on people, it helps to know how the technology actually works. AI Practitioner covers that without coding, including responsible AI. AI Business Strategist adds the organizational and governance side."
+    },
+    "r_soc_career": {
+      "type": "result",
+      "primary": "clf",
+      "next_step": "dea",
+      "reason": "Cloud Practitioner is a quick first step that shows employers you understand the cloud. Data Engineer – Associate is the AWS certification closest to data work. It's more technical, so build up your Python or SQL alongside it."
     }
   },
-
   "certs": {
     "clf": {
       "name": "AWS Certified Cloud Practitioner",

@@ -25,7 +25,7 @@ CERT_REQUIRED = ("name", "short_name", "level", "summary", "good_for", "status",
 CERT_LEVELS = {"Foundational", "Associate", "Professional", "Specialty", "Business"}
 CERT_STATUSES = {"active", "beta"}
 MIN_OPTIONS, MAX_OPTIONS = 2, 6
-MAX_QUESTIONS_PER_PATH = 5
+MAX_QUESTIONS_PER_PATH = 7
 
 
 class Report:
