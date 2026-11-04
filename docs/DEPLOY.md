@@ -1,11 +1,32 @@
 # Deploying to AWS
 
-One CloudFormation stack puts the whole project on AWS:
+One CloudFormation template, two ways to use it:
 
-- **Website:** private S3 bucket, served over HTTPS by CloudFront (`https://d1abc….cloudfront.net/`)
-- **Stats API:** Lambda + DynamoDB, reachable on the same domain at `/api/` (so no CORS setup)
+- **Stats API only (current setup).** The site stays on Vercel; AWS runs Lambda + DynamoDB. Parameter `CreateWebsite` = `no` (default). About 2 minutes.
+- **Everything on AWS.** `CreateWebsite` = `yes` also creates a private S3 bucket served by CloudFront, with the API on the same domain under `/api/`. About 10 minutes. See "Everything on AWS" below.
 
-About 15 minutes in the AWS console, no CLI needed. Event-sized traffic stays well inside the Free Tier.
+No CLI needed. Event-sized traffic stays well inside the Free Tier. Accounts on the new AWS sign-up need the **Paid plan** for CloudFormation; set a spend limit in **AWS Settings → Billing** (minimum $20) and a **Zero spend budget** alert in AWS Budgets.
+
+## Stats API for the Vercel site (current setup)
+
+1. In the AWS console, check the region in the top right (new accounts are fixed to one, e.g. **Europe (Stockholm) eu-north-1**). Do every step in that region.
+2. **CloudFormation → Create stack → With new resources (standard)**.
+3. **Choose an existing template → Upload a template file** → `backend/template.yaml` → **Next**.
+4. Stack name `cert-finder`. Parameters: leave all three defaults (`AllowedOrigin` = `*`, `CertIds` = the long list, `CreateWebsite` = `no`) → **Next**.
+5. **Next** again → tick **"I acknowledge that AWS CloudFormation might create IAM resources"** → **Submit**.
+6. Wait for `CREATE_COMPLETE` (1–2 minutes).
+7. **Outputs** → copy **StatsApiUrl** (`https://….lambda-url.<region>.on.aws/`).
+8. Open `StatsApiUrl` + `stats` in the browser. You should see `{"total": 0, "counts": [...]}`.
+9. Put the URL in `config.js`: `statsApiUrl: "https://….lambda-url.<region>.on.aws/",` then commit and push. Vercel redeploys in about a minute.
+10. Take the quiz on the live site, then open `/stats.html`: the count should go up within 5 seconds.
+
+`AllowedOrigin` = `*` lets the live site, Vercel preview links and local testing all call the API. The API is public either way, so a stricter origin wouldn't stop anyone from sending requests directly.
+
+Before the event, clear the test counts (section 4), and afterwards delete the stack (section 5).
+
+## Everything on AWS (S3 + CloudFront)
+
+Same as above, but set **CreateWebsite** = `yes` in step 4. CloudFront adds 5–10 minutes. Then follow sections 1–3 below.
 
 ## 1. Create the stack
 
@@ -16,7 +37,7 @@ About 15 minutes in the AWS console, no CLI needed. Event-sized traffic stays we
 2. Open **CloudFormation → Create stack → With new resources (standard)**.
 3. **Upload a template file** → choose `backend/template.yaml` → Next.
 4. Stack name: `cert-finder`.
-5. Parameters: leave both defaults (`AllowedOrigin` only matters for hosting outside AWS, see the end).
+5. Parameters: set **CreateWebsite** = `yes`; leave the others.
 6. Next → Next → tick **"I acknowledge that AWS CloudFormation might create IAM resources"** → **Submit**.
 7. Wait for `CREATE_COMPLETE`. CloudFront makes this take **5–10 minutes**.
 
@@ -51,7 +72,7 @@ Take the quiz on the site, then open `SiteUrl` + `stats.html` and check that the
 ## 4. Before the event
 
 - **Clear test counts:** DynamoDB → **Tables** → the table in the **StatsTableName** output → **Explore table items** → select all → **Actions → Delete items**.
-- **QR code:** make it from **SiteUrl**. The presenter opens `SiteUrl` + `stats.html` on the projector.
+- **QR code:** make it from the site's address (the Vercel URL, or **SiteUrl** on the all-AWS setup). The presenter opens the same address + `stats.html` on the projector.
 
 ## Updating the site
 
@@ -67,8 +88,9 @@ Upload the changed files again (same steps as section 2). CloudFront caches file
 ## After the event
 
 1. Screenshot `stats.html` if you want the numbers.
-2. **S3** → the site bucket → **Empty** (a bucket with files in it can't be deleted).
-3. **CloudFormation → cert-finder → Delete**. That removes everything: bucket, CloudFront, Lambda, table and role.
+2. Only on the all-AWS setup: **S3** → the site bucket → **Empty** (a bucket with files in it can't be deleted).
+3. **CloudFormation → cert-finder → Delete**. That removes everything the stack created: Lambda, table, role and, if created, bucket and CloudFront.
+4. Set `statsApiUrl` back to `""` in `config.js` and push, so the site stops calling a deleted API.
 
 ## Troubleshooting
 
@@ -76,14 +98,12 @@ Upload the changed files again (same steps as section 2). CloudFront caches file
 |---|---|
 | `AccessDenied` XML on the site | The file isn't in the bucket at that path. Check that `index.html` is at the bucket root and `tree.json` is inside `data/`. |
 | Old version still showing | CloudFront cache. Wait up to 5 minutes or create an invalidation for `/*`. |
-| Quiz works but stats stay at 0 | Open `SiteUrl` + `api/stats` in the browser. JSON means the API works and `config.js` is probably wrong (should be `"/api/"`); an error page means check **CloudWatch → Log groups → /aws/lambda/…**. |
+| Quiz works but stats stay at 0 | Open the API's `stats` URL in the browser (`StatsApiUrl` + `stats`, or `SiteUrl` + `api/stats`). JSON means the API works and `config.js` is probably wrong; an error page means check **CloudWatch → Log groups → /aws/lambda/…**. |
+| Browser console: CORS error | The stack's `AllowedOrigin` doesn't match the site. Set it to `*` (stack → **Update** → **Use current template** → change the parameter). |
+| Stack fails with an IAM or "not authorized" error | The account can't create IAM roles yet (new AWS sign-up on the Free plan). Upgrade to the Paid plan in **AWS Settings**, then delete the failed stack and create it again. |
 | `400 unknown cert id` | The id isn't in the `CertIds` parameter. Update the stack parameter after adding or removing certs in `tree.json`. |
 | Stack deletion fails on the bucket | Empty the bucket first, then delete the stack again. |
 | Counts look inflated | The API is public, so anyone with the URL can add counts. Fine for one event; delete the stack afterwards. |
-
-## Hosting the site elsewhere instead (Vercel, GitHub Pages)
-
-The stack still works as the stats backend. Set `statsApiUrl` in `config.js` to the **StatsApiUrl** output (the direct Lambda URL), and set the stack's **AllowedOrigin** parameter to the site's origin, e.g. `https://aws-cert-finder.vercel.app` (no trailing slash). The S3 bucket and CloudFront then simply stay unused.
 
 ## Security notes
 

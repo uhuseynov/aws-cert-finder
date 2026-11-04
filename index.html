@@ -471,7 +471,9 @@ footer .wrap { padding-block: 1.25rem 1.5rem; font-size: .82rem; color: var(--mu
     try {
       fetch(base + "result", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        // text/plain keeps this a "simple" CORS request (no preflight), which also
+        // works with keepalive in every browser. The API parses the body as JSON.
+        headers: { "Content-Type": "text/plain;charset=UTF-8" },
         body: JSON.stringify({ cert: certId }),
         keepalive: true
       }).catch(function () { /* stats are optional */ });

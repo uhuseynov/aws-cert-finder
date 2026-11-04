@@ -94,7 +94,7 @@ When a visitor reaches a result, send **one** request per quiz run:
 ```js
 fetch(STATS_URL + "result", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "text/plain;charset=UTF-8" },  // no CORS preflight; body is still JSON
   body: JSON.stringify({ cert: "saa" }),   // the result's primary cert id
   keepalive: true
 }).catch(() => {});                        // never block or show an error to the visitor
@@ -105,7 +105,7 @@ fetch(STATS_URL + "result", {
 | `POST /result` `{"cert": "<id>"}` | `200 {"ok": true}` · `400` unknown id or bad JSON · `413` body > 1 KB |
 | `GET /stats` | `200 {"total": 12, "counts": [{"cert": "saa", "count": 5}, ...]}` sorted by count, every cert included (zeros too) |
 
-`STATS_URL` comes from `config.js` (`statsApiUrl`) and ends with `/`. When it's empty, skip the call. `index.html` shows the full pattern if you want to copy it.
+`STATS_URL` comes from `config.js` (`statsApiUrl`) and ends with `/`. When it's empty, skip the call. Keep the `text/plain` content type: `application/json` would trigger a CORS preflight, which some browsers don't allow together with `keepalive`. `index.html` shows the full pattern if you want to copy it.
 
 ## How the questions are organized
 

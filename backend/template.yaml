@@ -1,9 +1,16 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
-  Cert Finder - static site on S3 behind CloudFront, plus a live stats API
-  (Lambda Function URL + DynamoDB) served on the same domain under /api/.
+  Cert Finder - live stats API (Lambda Function URL + DynamoDB). Optionally also
+  hosts the static site on S3 behind CloudFront, with the API under /api/.
 
 Parameters:
+  CreateWebsite:
+    Type: String
+    Default: "no"
+    AllowedValues: ["no", "yes"]
+    Description: >-
+      "no" = stats API only (the site is hosted on Vercel or elsewhere).
+      "yes" = also create the S3 bucket + CloudFront site (adds 5-10 minutes).
   CertIds:
     Type: String
     Default: "clf,aif,aib,saa,dva,cloudops,dea,mla,sap,dop,aip,scs"
@@ -16,10 +23,14 @@ Parameters:
       and calls the Function URL directly, e.g. https://aws-cert-finder.vercel.app
       (no trailing slash). The CloudFront site uses /api/ on its own domain.
 
+Conditions:
+  WithWebsite: !Equals [!Ref CreateWebsite, "yes"]
+
 Resources:
-  # ---------- Website: private S3 bucket, served only through CloudFront ----------
+  # ---------- Website (only if CreateWebsite = yes): private S3 bucket behind CloudFront ----------
   SiteBucket:
     Type: AWS::S3::Bucket
+    Condition: WithWebsite
     Properties:
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
@@ -32,6 +43,7 @@ Resources:
 
   SiteOriginAccessControl:
     Type: AWS::CloudFront::OriginAccessControl
+    Condition: WithWebsite
     Properties:
       OriginAccessControlConfig:
         Name: !Sub "${AWS::StackName}-site"
@@ -43,6 +55,7 @@ Resources:
   # Short cache so uploads show up within about a minute, no invalidation needed.
   SiteCachePolicy:
     Type: AWS::CloudFront::CachePolicy
+    Condition: WithWebsite
     Properties:
       CachePolicyConfig:
         Name: !Sub "${AWS::StackName}-short-cache"
@@ -62,6 +75,7 @@ Resources:
 
   SiteDistribution:
     Type: AWS::CloudFront::Distribution
+    Condition: WithWebsite
     Properties:
       DistributionConfig:
         Enabled: true
@@ -101,6 +115,7 @@ Resources:
 
   SiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
+    Condition: WithWebsite
     Properties:
       Bucket: !Ref SiteBucket
       PolicyDocument:
@@ -296,18 +311,21 @@ Resources:
       InvokedViaFunctionUrl: true
 
 Outputs:
+  StatsApiUrl:
+    Description: Put this in config.js as statsApiUrl when the site is on Vercel (ends with a slash)
+    Value: !GetAtt StatsFunctionUrl.FunctionUrl
   SiteUrl:
+    Condition: WithWebsite
     Description: The website (share this / put it in the QR code)
     Value: !Sub "https://${SiteDistribution.DomainName}/"
   SiteBucketName:
+    Condition: WithWebsite
     Description: Upload index.html, stats.html, config.js and the data folder here
     Value: !Ref SiteBucket
   DistributionId:
+    Condition: WithWebsite
     Description: CloudFront distribution id (for cache invalidations)
     Value: !Ref SiteDistribution
-  StatsApiUrl:
-    Description: Direct API URL, only needed if the site is hosted outside CloudFront
-    Value: !GetAtt StatsFunctionUrl.FunctionUrl
   StatsTableName:
     Description: DynamoDB table holding the counts (clear it before the event)
     Value: !Ref StatsTable
