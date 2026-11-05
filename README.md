@@ -7,9 +7,10 @@ A short quiz for the AWS Student Builder Group event at Constructor University: 
 - **Optional AWS stack** (one CloudFormation template): Lambda + DynamoDB stats API, and S3 + CloudFront hosting with the API on the same domain under `/api/`
 
 ```
-index.html            reference quiz page (works as-is; the real frontend can replace it)
-stats.html            presenter view: live counts, refreshes every 5 s
+index.html            the quiz page
+stats.html            presenter view: live counts, refreshes every 3 s
 config.js             settings: stats API URL (empty = stats off)
+assets/               favicon, apple-touch-icon and the link preview image
 data/tree.json        all questions, answers, results and cert info
 scripts/
   validate_tree.py    checks tree.json (dead ends, loops, missing fields); --paths prints every path
@@ -37,6 +38,13 @@ python scripts/dev_server.py
 ```
 
 The dev server also serves a fake stats API at `/api/`. To try the stats flow locally, set `statsApiUrl: "/api/"` in `config.js` (and set it back before pushing). Opening `index.html` straight from disk won't work because browsers block `fetch()` of local files; use the server.
+
+## Event day
+
+- **Kiosk:** open `/?kiosk` on a shared screen. The quiz goes back to the start after a minute without a tap, with a 10 second countdown first. Without `?kiosk` nothing resets, so phones are not affected. Links to the exam pages show as plain text in kiosk mode.
+- **Projector:** open `stats.html` fullscreen and turn off sleep on the laptop. If the rows show ids like `saa` instead of names, reload the page.
+- **Link preview:** the `og:` and `twitter:` tags in `index.html` use the full site URL. If the domain changes, update `og:url`, `og:image` and `twitter:image`.
+- **Local testing:** `config.js` points at the real stats API, so a finished quiz on localhost gets counted. Set `statsApiUrl` to `"/api/"` while testing with `scripts/dev_server.py` and don't commit it.
 
 ## For the frontend: the data contract
 
@@ -85,7 +93,7 @@ Rules worth keeping:
 
 - Don't hard-code questions or exam codes in the frontend. Exam versions change (several do in Nov–Dec 2026), so the data has names, not codes.
 - Show `meta.disclaimer`: this is not an official AWS tool.
-- Use your own design and colors; don't use AWS logos or the "Powered by AWS" mark.
+- The colors follow the AWS style (dark navy, orange), but never use AWS logos or the "Powered by AWS" mark.
 
 ### Live stats API (optional)
 
