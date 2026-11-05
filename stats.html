@@ -4,98 +4,183 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cert Finder Live Stats</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<meta name="description" content="Live results of the AWS Cert Finder quiz.">
+<meta name="theme-color" content="#161e2d">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <style>
-/* Layout: presenter view for a projector; one big total, then a ranked bar list that refreshes every few seconds. */
 :root {
-  --bg: #eef1f5; --surface: #ffffff; --ink: #16202c; --muted: #566476; --line: #d6dde6;
-  --track: #e3e8ee; --bar: #c96a00; --band: #16202c; --band-ink: #f3f6f9; --band-muted: #a9b6c5;
-  --accent: #ff9900; --accent-ink: #16202c; --hover: #fff4e3; --warn: #9a5b00;
-  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
-  --body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0d141c; --surface: #16212d; --ink: #e8edf3; --muted: #9caabb; --line: #2a3a4b;
-    --track: #223142; --bar: #d87400; --band: #0a1017; --band-ink: #f3f6f9; --band-muted: #93a3b5;
-    --hover: #1f2d3c; --warn: #f0b357; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0d141c; --surface: #16212d; --ink: #e8edf3; --muted: #9caabb; --line: #2a3a4b;
-  --track: #223142; --bar: #d87400; --band: #0a1017; --band-ink: #f3f6f9; --band-muted: #93a3b5;
-  --hover: #1f2d3c; --warn: #f0b357; color-scheme: dark;
+  --bg: #0f1620;
+  --panel: #161e2d;
+  --navy: #232f3e;
+  --ink: #f2f4f6;
+  --muted: #9fb0c1;
+  --line: #2b394b;
+  --track: rgba(255, 255, 255, .07);
+  --orange: #ff9900;
+  --on-orange: #16191f;
+  --warn: #ffb54d;
+  --c-Foundational: #3cc4b5;
+  --c-Associate: #6aa6ff;
+  --c-Professional: #b392ff;
+  --c-Specialty: #ff7c98;
+  --c-Business: #ff9900;
+  --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
+html { font-size: clamp(12px, min(1.05vw, 1.9vh), 44px); -webkit-text-size-adjust: 100%; }
 html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font: 400 1rem/1.5 var(--body); min-height: 100vh; }
-.wrap {
-  width: 100%; max-width: 64rem; margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+body {
+  background:
+    radial-gradient(60rem 30rem at 92% -10%, rgba(255, 153, 0, .13), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  font: 400 1rem/1.4 var(--body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
 }
-.band { background: var(--band); color: var(--band-ink); }
-.band .wrap { padding-block: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
-.band b { font: 600 1.05rem/1.2 var(--display); }
-.live { font: 500 .75rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--band-muted); display: flex; align-items: center; gap: .5rem; }
-.dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--accent); }
-.live.stale .dot { background: var(--band-muted); }
-main .wrap { padding-block: 2.5rem 3rem; display: grid; gap: 2.25rem; }
-.eyebrow { font: 500 .78rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.hero { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem 3rem; }
-.total { font: 800 clamp(4rem, 14vw, 8rem)/.9 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.hero p { font-size: 1.15rem; color: var(--muted); max-width: 28rem; }
-.hero p b { color: var(--ink); font-weight: 600; }
-.bars { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.pad {
+  padding-left: max(1.6rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.6rem, env(safe-area-inset-right, 0px));
+}
+.eyebrow { font: 600 .78rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+.band { background: var(--navy); color: #fff; box-shadow: 0 1px 0 rgba(255, 255, 255, .06); }
+.band .pad { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.6rem; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: .8rem; min-width: 0; }
+.brand svg { width: 2.1rem; height: 2.1rem; flex: none; display: block; }
+.brand b { font-size: 1.15rem; font-weight: 700; letter-spacing: -.005em; }
+.brand span { color: #aab7c4; font-size: .85rem; margin-left: .6rem; }
+.live { display: flex; align-items: center; gap: .6rem; font: 600 .8rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #c9d2dc; }
+.dot { width: .65rem; height: .65rem; border-radius: 50%; background: var(--orange); box-shadow: 0 0 0 0 rgba(255, 153, 0, .6); animation: ping 2s ease-out infinite; }
+.live.stale .dot { background: #6b7a8c; animation: none; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(255, 153, 0, .55); } 80%, 100% { box-shadow: 0 0 0 .6rem rgba(255, 153, 0, 0); } }
+
+main { flex: 1; min-height: 0; }
+.board { display: grid; gap: 2rem; padding-block: 1.6rem 1.8rem; height: 100%; }
+.summary { display: grid; align-content: start; gap: 1.1rem; }
+.total {
+  font: 800 clamp(5.5rem, 17vw, 11rem)/.85 var(--body); letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums; color: #fff;
+}
+.total.bump { animation: pop .7s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes pop { 0% { transform: scale(1); color: #fff; } 25% { transform: scale(1.06); color: var(--orange); } 100% { transform: scale(1); color: #fff; } }
+.lead { font-size: 1.35rem; line-height: 1.35; color: var(--muted); max-width: 22rem; }
+.lead b { color: #fff; font-weight: 700; }
+.lead .pct { color: var(--orange); font-weight: 700; }
+.legend { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; margin-top: .6rem; }
+.legend span { display: inline-flex; align-items: center; gap: .5rem; font-size: .92rem; color: var(--muted); }
+.legend i { width: .9rem; height: .9rem; border-radius: 3px; background: var(--c); }
+.err { color: var(--warn); font-size: .95rem; max-width: 24rem; }
+
+.ranking { display: flex; flex-direction: column; gap: .9rem; min-height: 0; }
+.bars { display: grid; grid-auto-rows: minmax(2.7rem, 1fr); gap: .3rem; margin: 0; padding: 0; list-style: none; flex: 1; min-height: 0; }
 .row {
-  display: grid; grid-template-columns: minmax(9rem, 17rem) minmax(0, 1fr) 6.5rem;
-  align-items: center; gap: 1rem; padding: .35rem .5rem; border-radius: 8px;
+  --c: var(--c-Foundational);
+  display: grid; grid-template-columns: 2.2rem minmax(0, 24rem) minmax(0, 1fr) 6rem;
+  align-items: center; gap: 1rem; padding: .2rem 1rem .2rem .6rem; min-height: 0;
+  background: rgba(255, 255, 255, .025); border-radius: 8px;
+  transition: opacity .4s ease, background .4s ease;
 }
-.row:hover { background: var(--hover); }
-.name { font-weight: 600; font-size: 1.05rem; min-width: 0; }
-.level { display: block; font: 500 .7rem/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.track { height: 1.25rem; background: var(--track); border-radius: 0 4px 4px 0; overflow: hidden; }
-.fill { height: 100%; width: 0; background: var(--bar); border-radius: 0 4px 4px 0; transition: width .6s ease; }
-.val { text-align: right; font: 500 1.05rem/1.2 var(--mono); font-variant-numeric: tabular-nums; }
-.val small { display: block; color: var(--muted); font-size: .75rem; }
-.msg { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1.25rem 1.4rem; display: grid; gap: .5rem; max-width: 40rem; }
-.msg code { font-family: var(--mono); font-size: .9em; }
-.err { color: var(--warn); font-size: .95rem; }
-@media (max-width: 640px) {
-  .row { grid-template-columns: minmax(0, 1fr) 4.5rem; }
-  .track { grid-column: 1 / -1; grid-row: 2; }
+.row.lvl-Foundational { --c: var(--c-Foundational); }
+.row.lvl-Associate { --c: var(--c-Associate); }
+.row.lvl-Professional { --c: var(--c-Professional); }
+.row.lvl-Specialty { --c: var(--c-Specialty); }
+.row.lvl-Business { --c: var(--c-Business); }
+.row.zero .fill, .row.zero .rank { opacity: .55; }
+.row.zero .name { color: var(--muted); }
+.row.bump { animation: glow 1.6s ease-out; }
+@keyframes glow { 0% { background: rgba(255, 153, 0, .28); } 100% { background: rgba(255, 255, 255, .025); } }
+.rank { font: 600 1rem/1 var(--mono); color: var(--muted); text-align: center; }
+.row.first .rank { background: var(--orange); color: var(--on-orange); border-radius: 6px; padding: .35rem 0; }
+.name { font-weight: 600; font-size: 1.08rem; line-height: 1.15; min-width: 0; }
+.level { display: block; margin-top: .12rem; font: 600 .72rem/1.1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--c); }
+.track { height: 1.1rem; background: var(--track); border-radius: 0 6px 6px 0; overflow: hidden; }
+.fill {
+  height: 100%; width: 0; border-radius: 0 6px 6px 0;
+  background: var(--c);
+  transition: width .8s cubic-bezier(.22, .8, .24, 1);
 }
-@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+@supports (background: color-mix(in srgb, red, blue)) {
+  .fill { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, transparent), var(--c)); }
+}
+.val { text-align: right; font: 700 1.35rem/1 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.val small { display: block; margin-top: .1rem; color: var(--muted); font: 500 .82rem/1 var(--mono); }
+.row.zero .val { color: var(--muted); font-weight: 500; }
+
+.msg { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 1.5rem 1.7rem; display: grid; gap: .6rem; max-width: 42rem; margin: 2rem 0; }
+.msg h2 { margin: 0; font-size: 1.5rem; }
+.msg code { font-family: var(--mono); font-size: .9em; color: var(--orange); }
+
+.foot { border-top: 1px solid var(--line); color: var(--muted); font-size: .86rem; }
+.foot .pad { padding-block: .55rem calc(.55rem + env(safe-area-inset-bottom, 0px)); display: flex; gap: .5rem 1.2rem; flex-wrap: wrap; justify-content: space-between; }
+.foot strong { color: #dfe6ed; }
+
+@media (min-aspect-ratio: 5/4) and (min-width: 900px) and (min-height: 580px) {
+  body { height: 100vh; height: 100dvh; overflow: hidden; }
+  main { display: flex; flex-direction: column; }
+  #app { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .board { flex: 1; min-height: 0; height: auto; grid-template-columns: minmax(0, 30fr) minmax(0, 70fr); grid-template-rows: minmax(0, 1fr); gap: 3rem; }
+  .summary { padding-top: .5rem; }
+}
+
+@media not all and (min-aspect-ratio: 5/4), (max-width: 899px) {
+  html { font-size: 16px; }
+  .row { grid-template-columns: 1.8rem minmax(0, 1fr) 4.6rem; gap: .35rem .7rem; padding-block: .45rem; }
+  .track { grid-column: 2 / -1; grid-row: 2; }
+  .bars { grid-auto-rows: auto; }
+  .brand span { display: none; }
+  .total { font-size: 5.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
 </style>
 </head>
 <body>
 <header class="band">
-  <div class="wrap">
-    <b>Cert Finder · live results</b>
+  <div class="pad">
+    <div class="brand">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="14" fill="#ff9900"/>
+        <g fill="#232f3e"><rect x="9" y="42" width="9" height="10" rx="2"/><rect x="22" y="32" width="9" height="20" rx="2"/><rect x="35" y="22" width="9" height="30" rx="2"/><rect x="48" y="12" width="9" height="40" rx="2"/></g>
+      </svg>
+      <div><b>Cert Finder · live results</b><span>AWS Student Builder Group · Constructor University</span></div>
+    </div>
     <span class="live" id="live"><span class="dot" aria-hidden="true"></span><span id="live-text">Connecting…</span></span>
   </div>
 </header>
-<main>
-  <div class="wrap" id="app">
-    <p class="eyebrow">Loading…</p>
-  </div>
+<main class="pad" id="main">
+  <div id="app"><p class="eyebrow" style="padding-top: 2rem;">Loading…</p></div>
 </main>
+<footer class="foot">
+  <div class="pad">
+    <span><strong>Not an official AWS tool.</strong> Results are anonymous and counted live from the quiz.</span>
+    <span id="foot-note"></span>
+  </div>
+</footer>
 
 <script src="config.js"></script>
 <script>
 (function () {
   "use strict";
   var config = window.CERT_FINDER_CONFIG || {};
-  var REFRESH_MS = 5000;
+  var REFRESH_MS = 3000;
+  var TIMEOUT_MS = 8000;
   var app = document.getElementById("app");
   var liveEl = document.getElementById("live");
   var liveText = document.getElementById("live-text");
+  var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   var certs = {};
   var rows = {};
+  var prevCounts = null;
+  var shownTotal = 0;
+  var countTimer = null;
   var built = false;
 
   function el(tag, cls, text) {
@@ -105,10 +190,31 @@ main .wrap { padding-block: 2.5rem 3rem; display: grid; gap: 2.25rem; }
     return n;
   }
 
+  function boldEl(text) { return el("b", null, text); }
+
   function apiBase() {
     var url = (config.statsApiUrl || "").trim();
     if (!url) return "";
     return url.charAt(url.length - 1) === "/" ? url : url + "/";
+  }
+
+  function fetchJSON(url, opts) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var ctl = typeof AbortController === "function" ? new AbortController() : null;
+      var o = opts || {};
+      if (ctl) o.signal = ctl.signal;
+      var timer = setTimeout(function () {
+        if (done) return;
+        done = true;
+        if (ctl) ctl.abort();
+        reject(new Error("timed out"));
+      }, TIMEOUT_MS);
+      fetch(url, o)
+        .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(function (d) { if (done) return; done = true; clearTimeout(timer); resolve(d); },
+              function (e) { if (done) return; done = true; clearTimeout(timer); reject(e); });
+    });
   }
 
   function notConfigured() {
@@ -124,101 +230,184 @@ main .wrap { padding-block: 2.5rem 3rem; display: grid; gap: 2.25rem; }
 
   function build() {
     app.replaceChildren();
-    var hero = el("section", "hero");
-    var left = el("div");
-    left.appendChild(el("p", "eyebrow", "People who got a recommendation"));
+    var board = el("div", "board");
+
+    var summary = el("section", "summary");
+    summary.appendChild(el("p", "eyebrow", "People who got a recommendation"));
     var total = el("div", "total", "0");
     total.id = "total";
-    left.appendChild(total);
-    hero.appendChild(left);
-    var lead = el("p");
+    summary.appendChild(total);
+    var lead = el("p", "lead");
     lead.id = "lead";
-    hero.appendChild(lead);
-    app.appendChild(hero);
-
-    var section = el("section");
-    section.appendChild(el("p", "eyebrow", "Recommended first certification"));
-    var list = el("ul", "bars");
-    list.id = "bars";
-    list.style.marginTop = ".9rem";
-    section.appendChild(list);
+    summary.appendChild(lead);
+    var legend = el("div", "legend");
+    legend.setAttribute("aria-label", "Certification levels");
+    var present = {};
+    Object.keys(certs).forEach(function (k) { present[certs[k].level] = true; });
+    ["Foundational", "Associate", "Professional", "Specialty", "Business"].forEach(function (lvl) {
+      if (!present[lvl]) return;
+      var item = el("span", null, lvl);
+      var sw = el("i");
+      sw.style.setProperty("--c", "var(--c-" + lvl + ", var(--orange))");
+      item.prepend(sw);
+      legend.appendChild(item);
+    });
+    summary.appendChild(legend);
     var err = el("p", "err");
     err.id = "err";
     err.hidden = true;
-    section.appendChild(err);
-    app.appendChild(section);
+    summary.appendChild(err);
+    board.appendChild(summary);
+
+    var ranking = el("section", "ranking");
+    ranking.appendChild(el("p", "eyebrow", "Recommended first certification"));
+    var list = el("ul", "bars");
+    list.id = "bars";
+    ranking.appendChild(list);
+    board.appendChild(ranking);
+
+    app.appendChild(board);
     built = true;
   }
 
   function row(id) {
     if (rows[id]) return rows[id];
     var cert = certs[id] || { short_name: id, level: "" };
-    var li = el("li", "row");
+    var li = el("li", "row" + (cert.level ? " lvl-" + cert.level : ""));
+    li.addEventListener("animationend", function (e) { if (e.target === li) li.classList.remove("bump"); });
+    var rank = el("div", "rank");
     var name = el("div", "name", cert.short_name);
     name.appendChild(el("span", "level", cert.level));
     var track = el("div", "track");
     var fill = el("div", "fill");
     track.appendChild(fill);
     var val = el("div", "val");
-    li.append(name, track, val);
-    rows[id] = { li: li, fill: fill, val: val, name: cert.short_name };
+    li.append(rank, name, track, val);
+    rows[id] = { li: li, rank: rank, fill: fill, val: val, name: cert.short_name };
     return rows[id];
   }
 
+  function pctText(count, total) {
+    if (!total || !count) return "0%";
+    var p = count / total * 100;
+    return (p < 1 ? "<1" : Math.round(p)) + "%";
+  }
+
+  function setTotal(n) {
+    var node = document.getElementById("total");
+    var from = shownTotal;
+    shownTotal = n;
+    clearInterval(countTimer);
+    if (from === n) { node.textContent = n.toLocaleString("en"); return; }
+    if (n > from) { node.classList.remove("bump"); void node.offsetWidth; node.classList.add("bump"); }
+    var start = performance.now(), dur = 700;
+    countTimer = setInterval(function () {
+      var t = Math.max(0, Math.min(1, (performance.now() - start) / dur));
+      node.textContent = Math.round(from + (n - from) * (1 - Math.pow(1 - t, 3))).toLocaleString("en");
+      if (t === 1) clearInterval(countTimer);
+    }, 30);
+  }
+
   function render(data) {
+    if (!data || !Array.isArray(data.counts) || typeof data.total !== "number") throw new Error("unexpected response");
     if (!built) build();
-    var total = data.total || 0;
-    var max = data.counts.reduce(function (m, c) { return Math.max(m, c.count); }, 0);
-    document.getElementById("total").textContent = total.toLocaleString("en");
-    var top = data.counts[0];
+    var counts = data.counts.map(function (c) { return { cert: String(c.cert), count: Math.max(0, Number(c.count) || 0) }; });
+    var total = data.total;
+    var max = counts.reduce(function (m, c) { return Math.max(m, c.count); }, 0);
+    setTotal(total);
+
+    var leaders = max ? counts.filter(function (c) { return c.count === max; }) : [];
+    function nameOf(id) { return (certs[id] || {}).short_name || id; }
     var lead = document.getElementById("lead");
-    if (total && top && top.count) {
-      lead.innerHTML = "";
-      lead.append("Most common pick so far: ");
-      var b = document.createElement("b");
-      b.textContent = (certs[top.cert] || {}).short_name || top.cert;
-      lead.append(b, " (" + Math.round(top.count / total * 100) + "%).");
+    lead.textContent = "";
+    if (total && leaders.length === 1) {
+      lead.append("Most common pick so far: ", boldEl(nameOf(leaders[0].cert)), el("span", "pct", " " + pctText(max, total)));
+    } else if (total && leaders.length > 1 && leaders.length <= 3) {
+      lead.append("Tied at the top: ");
+      leaders.forEach(function (c, i) { if (i) lead.append(", "); lead.append(boldEl(nameOf(c.cert))); });
+      lead.append(el("span", "pct", " " + pctText(max, total) + " each"));
+    } else if (total && leaders.length > 3) {
+      lead.append("Tied at the top: ", boldEl(leaders.length + " certifications"), el("span", "pct", " " + pctText(max, total) + " each"));
     } else {
       lead.textContent = "Waiting for the first result. Scan the QR code and take the quiz!";
     }
+
+    var present = {};
+    counts.forEach(function (c) { present[c.cert] = true; });
+    Object.keys(rows).forEach(function (id) { if (!present[id]) { rows[id].li.remove(); delete rows[id]; } });
+
     var list = document.getElementById("bars");
-    data.counts.forEach(function (c) {
+    var before = {};
+    Object.keys(rows).forEach(function (id) { if (rows[id].li.parentNode) before[id] = rows[id].li.getBoundingClientRect().top; });
+
+    var ref = list.firstElementChild;
+    counts.forEach(function (c) {
       var r = row(c.cert);
-      var pct = total ? Math.round(c.count / total * 100) : 0;
+      var rank = 1 + counts.filter(function (o) { return o.count > c.count; }).length;
+      var pct = pctText(c.count, total);
       r.fill.style.width = (max ? c.count / max * 100 : 0) + "%";
-      r.val.innerHTML = "";
-      r.val.append(String(c.count));
-      r.val.appendChild(el("small", null, pct + "%"));
-      r.li.title = r.name + ": " + c.count + " of " + total + " (" + pct + "%)";
-      list.appendChild(r.li); // re-appending keeps the list in ranked order
+      r.rank.textContent = c.count ? String(rank) : "–";
+      r.val.textContent = "";
+      r.val.append(c.count.toLocaleString("en"));
+      r.val.appendChild(el("small", null, pct));
+      r.li.classList.toggle("zero", !c.count);
+      r.li.classList.toggle("first", !!c.count && c.count === max);
+      r.li.title = r.name + ": " + c.count.toLocaleString("en") + " of " + total.toLocaleString("en") + " (" + pct + ")";
+      if (prevCounts && c.count > (prevCounts[c.cert] || 0)) {
+        r.li.classList.remove("bump"); void r.li.offsetWidth; r.li.classList.add("bump");
+      }
+      if (r.li === ref) ref = ref.nextElementSibling; else list.insertBefore(r.li, ref);
     });
+
+    if (!reduceMotion && typeof Element.prototype.animate === "function") {
+      Object.keys(before).forEach(function (id) {
+        var r = rows[id];
+        if (!r) return;
+        var delta = before[id] - r.li.getBoundingClientRect().top;
+        if (Math.abs(delta) < 1) return;
+        r.li.animate([{ transform: "translateY(" + delta + "px)" }, { transform: "none" }], { duration: 600, easing: "cubic-bezier(.22, .8, .24, 1)" });
+      });
+    }
+
+    prevCounts = {};
+    counts.forEach(function (c) { prevCounts[c.cert] = c.count; });
     document.getElementById("err").hidden = true;
     liveEl.classList.remove("stale");
     liveText.textContent = "Live · updated " + new Date().toLocaleTimeString("en-GB");
   }
 
   function showError(e) {
-    if (!built) build();
-    var err = document.getElementById("err");
-    err.hidden = false;
-    err.textContent = "Couldn't reach the stats API (" + e.message + "). Showing the last numbers; retrying.";
     liveEl.classList.add("stale");
     liveText.textContent = "Reconnecting…";
+    var msg = "Couldn't reach the stats API (" + e.message + "). " + (built ? "Showing the last numbers; retrying." : "Retrying…");
+    if (!built) {
+      var box = el("div", "msg");
+      box.appendChild(el("h2", null, "Waiting for the stats API"));
+      box.appendChild(el("p", null, msg));
+      app.replaceChildren(box);
+      return;
+    }
+    var err = document.getElementById("err");
+    err.hidden = false;
+    err.textContent = msg;
   }
 
   function poll() {
-    fetch(apiBase() + "stats", { cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    fetchJSON(apiBase() + "stats", { cache: "no-store" })
       .then(render)
       .catch(showError)
-      .finally(function () { setTimeout(poll, REFRESH_MS); });
+      .then(function () { setTimeout(poll, REFRESH_MS); });
   }
 
   if (!apiBase()) { notConfigured(); return; }
-  fetch(config.treeUrl || "data/tree.json", { cache: "no-cache" })
-    .then(function (r) { return r.ok ? r.json() : { certs: {} }; })
-    .catch(function () { return { certs: {} }; })
-    .then(function (tree) { certs = tree.certs || {}; poll(); });
+  fetchJSON(config.treeUrl || "data/tree.json", { cache: "no-cache" })
+    .catch(function () { return {}; })
+    .then(function (tree) {
+      tree = tree || {};
+      certs = tree.certs || {};
+      if (tree.meta && tree.meta.updated) document.getElementById("foot-note").textContent = "Data checked " + tree.meta.updated;
+      poll();
+    });
 })();
 </script>
 </body>
