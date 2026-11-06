@@ -1,10 +1,59 @@
 # AWS Cert Finder
 
-A short quiz for the AWS Student Builder Group event at Constructor University: visitors answer 4–6 questions about their field of study and goals, and get a recommended AWS certification plus a next step. Optional live stats let the presenter show which certifications the room got.
+An interactive quiz that recommends the right AWS certification to students of every major. Built for the first event of the AWS Student Builder Group at Constructor University (Bremen) on 6 November 2026.
 
-- **Questions & results:** `data/tree.json` (one file, no code)
-- **Site:** static, hosted on Vercel (see Deploying)
-- **Optional AWS stack** (one CloudFormation template): Lambda + DynamoDB stats API, and S3 + CloudFront hosting with the API on the same domain under `/api/`
+**Live:** [aws-cert-finder.vercel.app](https://aws-cert-finder.vercel.app) · **Live results:** [aws-cert-finder.vercel.app/stats.html](https://aws-cert-finder.vercel.app/stats.html)
+
+![Start screen of AWS Cert Finder](docs/images/quiz-start.png)
+
+Visitors answer 4–6 questions about their field of study and goals, and get a recommended certification plus a next step. During the event, every result was counted live on AWS and shown on the projector.
+
+## At the event
+
+47 quizzes were completed during the event. Cloud Practitioner and AI Practitioner were the most common first recommendations (14 each, 30%), followed by ML Engineer – Associate (6), Solutions Architect – Associate and Developer – Associate (5 each), and Data Engineer – Associate (3).
+
+![Live results page at the end of the event: 47 completed quizzes](docs/images/event-stats.png)
+
+## How the quiz works
+
+The first question is the field of study, so students of every major get a path that fits them:
+
+![First question: field of study](docs/images/quiz-field.png)
+
+Each field has its own track, and every question after it changes the result:
+
+| Field (first answer) | Track | Typical results |
+|---|---|---|
+| Computer science, software, data science, engineering | `q_tech_*`, `q_focus`, `q_data`, `q_ai`, `q_focus_pro` | All 12 certs, from Foundational to Professional |
+| Physics, mathematics | `q_quant_*` | Cloud/AI Practitioner, or Solutions Architect, Data Engineer, ML Engineer |
+| Biology, chemistry, biochemistry, earth & environment | `q_life_*` | Same as physics, with field-specific use cases |
+| Business, economics, management | `q_biz_*` | Cloud Practitioner, AI Practitioner, AI Business Strategist; Data Engineer for data people |
+| Psychology, social sciences, politics, media, humanities | `q_soc_*` | AI Practitioner, AI Business Strategist, Cloud Practitioner; Data/ML Engineer for data people |
+| Something else / not a student | `q_experience` and the general questions | Any |
+
+Anyone who answers that they already use the cloud regularly jumps to the technical track (`q_tech_cert_alot`), whatever their field.
+
+While answering, a progress bar and the "Question 2 of 4–6" counter show how far along you are, earlier answers stay visible above the question, and the keys 1–6 pick an answer:
+
+![Second question with progress bar and the previous answer](docs/images/quiz-question.png)
+
+Each result shows the recommended certification, why it fits, and a next certification to aim for.
+
+Some nodes are shared between tracks (for example `q_time_data`, `q_sci_career` and the `r_research_*` results), so the "tree" is really a graph without loops. Changing a shared node changes it for every track that uses it.
+
+## Architecture
+
+```
+visitor ──https──▶ Vercel (static: index.html, stats.html, config.js, data/tree.json)
+   │
+   └─ finished quiz ──POST /result──▶ AWS Lambda (Function URL) ──▶ DynamoDB (one counter per cert)
+stats.html ──GET /stats every 3 s──▶ same Lambda
+```
+
+- **Questions & results:** `data/tree.json` (one file, no code): 40 questions and 51 results covering all 12 current AWS certifications
+- **Site:** static, hosted on Vercel's free Hobby plan
+- **Live stats:** AWS Lambda + DynamoDB, deployed with one CloudFormation template. Only one counter per certification is stored, no individual answers or personal data.
+- **Optional:** the same template can also host the site on S3 + CloudFront, with the API on the same domain under `/api/` (see `docs/DEPLOY.md`)
 
 ```
 index.html            the quiz page
@@ -15,19 +64,21 @@ data/tree.json        all questions, answers, results and cert info
 scripts/
   validate_tree.py    checks tree.json (dead ends, loops, missing fields); --paths prints every path
   dev_server.py       local server + fake stats API, no AWS needed
-  deploy_site.sh      uploads the site to S3 and refreshes CloudFront (AWS CLI)
+  deploy_site.sh      uploads the site to S3 and refreshes CloudFront (AWS CLI, optional setup)
 backend/
   handler.py          Lambda code (source of truth)
-  template.yaml       CloudFormation: S3 + CloudFront site, DynamoDB + Lambda API
+  template.yaml       CloudFormation: DynamoDB + Lambda stats API; optional S3 + CloudFront site
   sync_template.py    copies handler.py into template.yaml
   tests/              pytest + moto (mocked DynamoDB)
-docs/DEPLOY.md        step-by-step deploy, upload, reset and teardown
+docs/
+  DEPLOY.md           step-by-step deploy, reset and teardown
+  images/             screenshots for this README
 ```
 
-```
-visitor ──https──▶ CloudFront ──/*──────▶ S3 bucket (index.html, stats.html, config.js, data/)
-                              └─/api/*──▶ Lambda Function URL ──▶ DynamoDB (one counter per cert)
-```
+## Team
+
+- **Umid Huseynov:** questions and decision logic, AWS backend (Lambda, DynamoDB, CloudFormation), tests and CI
+- **Riyad:** frontend (design, mobile layout, progress bar, kiosk mode, link previews, stats page)
 
 ## Run it locally
 
@@ -43,6 +94,7 @@ The dev server also serves a fake stats API at `/api/`. To try the stats flow lo
 
 - **Kiosk:** open `/?kiosk` on a shared screen. The quiz goes back to the start after a minute without a tap, with a 10 second countdown first. Without `?kiosk` nothing resets, so phones are not affected. Links to the exam pages show as plain text in kiosk mode.
 - **Projector:** open `stats.html` fullscreen and turn off sleep on the laptop. If the rows show ids like `saa` instead of names, reload the page.
+- **Reset the counts:** right before the event, delete all items in the DynamoDB table (`docs/DEPLOY.md`, section 4), so the projector starts at 0.
 - **Link preview:** the `og:` and `twitter:` tags in `index.html` use the full site URL. If the domain changes, update `og:url`, `og:image` and `twitter:image`.
 - **Local testing:** `config.js` points at the real stats API, so a finished quiz on localhost gets counted. Set `statsApiUrl` to `"/api/"` while testing with `scripts/dev_server.py` and don't commit it.
 
@@ -52,7 +104,7 @@ The frontend only **walks the tree**. All logic lives in `tree.json`.
 
 ```jsonc
 {
-  "start": "q_experience",               // first node to show
+  "start": "q_field",                    // first node to show
   "meta": { "title", "subtitle", "updated", "disclaimer", "price_note", "resources": [{ "label", "url" }] },
   "nodes": {
     "q_experience": {
@@ -95,7 +147,7 @@ Rules worth keeping:
 - Show `meta.disclaimer`: this is not an official AWS tool.
 - The colors follow the AWS style (dark navy, orange), but never use AWS logos or the "Powered by AWS" mark.
 
-### Live stats API (optional)
+### Live stats API
 
 When a visitor reaches a result, send **one** request per quiz run:
 
@@ -115,23 +167,6 @@ fetch(STATS_URL + "result", {
 
 `STATS_URL` comes from `config.js` (`statsApiUrl`) and ends with `/`. When it's empty, skip the call. Keep the `text/plain` content type: `application/json` would trigger a CORS preflight, which some browsers don't allow together with `keepalive`. `index.html` shows the full pattern if you want to copy it.
 
-## How the questions are organized
-
-The first question is the field of study. Each field has its own track, and every question after it changes the result:
-
-| Field (first answer) | Track | Typical results |
-|---|---|---|
-| Computer science, software, data science, engineering | `q_tech_*`, `q_focus`, `q_data`, `q_ai`, `q_focus_pro` | All 12 certs, from Foundational to Professional |
-| Physics, mathematics | `q_quant_*` | Cloud/AI Practitioner, or Solutions Architect, Data Engineer, ML Engineer |
-| Biology, chemistry, biochemistry, earth & environment | `q_life_*` | Same as physics, with field-specific use cases |
-| Business, economics, management | `q_biz_*` | Cloud Practitioner, AI Practitioner, AI Business Strategist; Data Engineer for data people |
-| Psychology, social sciences, politics, media, humanities | `q_soc_*` | AI Practitioner, AI Business Strategist, Cloud Practitioner; Data/ML Engineer for data people |
-| Something else / not a student | `q_experience` and the general questions | Any |
-
-Anyone who answers that they already use the cloud regularly jumps to the technical track (`q_tech_cert_alot`), whatever their field.
-
-Some nodes are shared between tracks (for example `q_time_data`, `q_sci_career` and the `r_research_*` results), so the "tree" is really a graph without loops. Changing a shared node changes it for every track that uses it.
-
 ## Editing questions
 
 1. Edit `data/tree.json` (keep ids: questions start with `q_`, results with `r_`).
@@ -150,17 +185,17 @@ cfn-lint backend/template.yaml
 pytest backend/tests
 ```
 
-GitHub Actions runs the same checks on every push (`.github/workflows/checks.yml`).
+GitHub Actions runs the same checks on every push (`.github/workflows/checks.yml`). The backend tests run against a mocked DynamoDB (moto), so CI needs no AWS credentials; the deployed stack was smoke-tested by hand.
 
 ## Deploying
 
-**Current setup: Vercel (static, no build step).**
+**Site: Vercel (static, no build step).**
 
 1. [vercel.com](https://vercel.com) → **Continue with GitHub**.
 2. **Add New → Project** → import this repo.
 3. **Framework Preset: Other**, leave Build and Output settings empty → **Deploy**.
 4. Every push to `main` redeploys automatically. `.vercelignore` keeps `backend/`, `scripts/` and `docs/` off the site.
 
-Live stats are off (`statsApiUrl: ""` in `config.js`). To turn them on later, deploy the AWS stack from `docs/DEPLOY.md` (needs a fully activated AWS account with CloudFormation access), put its **StatsApiUrl** output in `config.js`, and set the stack's **AllowedOrigin** to the Vercel URL.
+**Live stats: AWS.** Deploy `backend/template.yaml` with CloudFormation (`CreateWebsite` = `no`) as described in `docs/DEPLOY.md`, then put the stack's **StatsApiUrl** output in `config.js`. `AllowedOrigin` is `*`, so the live site, Vercel preview links and local tests can all reach it.
 
-The same stack can also host the whole site on S3 + CloudFront instead of Vercel; see `docs/DEPLOY.md`.
+To stop the stats, delete the stack (`docs/DEPLOY.md`, "After the event") and set `statsApiUrl` back to `""`.
