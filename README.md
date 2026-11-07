@@ -37,7 +37,13 @@ While answering, a progress bar and the "Question 2 of 4–6" counter show how f
 
 ![Second question with progress bar and the previous answer](docs/images/quiz-question.png)
 
-Each result shows the recommended certification, why it fits, and a next certification to aim for.
+Each result shows the recommended certification, why it fits, and a next certification to aim for:
+
+![Result screen: Solutions Architect – Associate, with why it fits and the next certification to aim for](docs/images/quiz-result.png)
+
+Previous answers stay visible below the result, with buttons to change the last one or start over:
+
+![Answer summary with Start over and Change last answer buttons](docs/images/quiz-answers.png)
 
 Some nodes are shared between tracks (for example `q_time_data`, `q_sci_career` and the `r_research_*` results), so the "tree" is really a graph without loops. Changing a shared node changes it for every track that uses it.
 
